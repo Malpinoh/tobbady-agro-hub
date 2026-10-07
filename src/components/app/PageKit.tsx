@@ -65,7 +65,7 @@ export function RequirePermission({ perm, children }: { perm: string; children: 
   return <>{children}</>;
 }
 
-export function ComingSoon({ icon: Icon = Hammer, title, items }: { icon?: LucideIcon; title: string; items: string[] }) {
+export function ComingSoon({ icon: Icon = Hammer, title, items }: { icon?: LucideIcon | undefined; title: string; items: string[] }) {
   return (
     <Panel>
       <div className="flex flex-col gap-6 md:flex-row md:items-start">

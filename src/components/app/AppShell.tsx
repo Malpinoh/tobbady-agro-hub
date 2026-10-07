@@ -13,7 +13,7 @@ import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
 import { ROLE_LABELS } from "@/lib/access";
 import { useAuth } from "@/hooks/use-auth";
 
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const { can } = useAuth();
   const items = NAV_ITEMS.filter((i) => can(i.permission));
   return (
@@ -46,7 +46,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarBody({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   return (
     <div className="flex h-full flex-col bg-sidebar">
       <div className="border-b border-sidebar-border px-5 py-5"><Brand /></div>
