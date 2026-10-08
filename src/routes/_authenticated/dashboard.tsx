@@ -3,7 +3,7 @@ import { PageHeader, Panel, DemoTag, StatusBadge, RequirePermission } from "@/co
 import { formatNaira } from "@/lib/access";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — TOBADDY AGRO LIVESTOCK" }, { name: "description", content: "Business overview dashboard." }, { property: "og:title", content: "Dashboard — TOBADDY AGRO LIVESTOCK" }, { property: "og:description", content: "Business overview dashboard." }] }),
+  head: () => ({ meta: [{ title: "Dashboard — TOBADDY AGRO LIVESTOCK" }, { name: "description", content: "Business overview dashboard." }, { property: "og:title", content: "Dashboard — TOBADDY AGRO LIVESTOCK" }, { property: "og:description", content: "Agro Livestock Business overview dashboard." }] }),
   component: Dashboard,
 });
 

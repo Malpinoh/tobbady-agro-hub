@@ -37,7 +37,7 @@ function Landing() {
             TOBADDY AGRO LIVESTOCK
           </h1>
           <p className="mt-5 max-w-xl text-lg text-sidebar-muted">
-            One secure workspace for livestock, finance, sales, inventory and staff — with role-based access for every team member.
+            One secure workspace for livestock, finance, sales, inventory and staff with role-based access for every team member.
           </p>
           <div className="mt-8 flex gap-3">
             <Button asChild size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90"><Link to="/auth">Sign in to continue</Link></Button>

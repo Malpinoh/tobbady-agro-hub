@@ -236,11 +236,9 @@ Prepare the project for continued development through GitHub.
 
 Before finishing this stage, make sure the application runs correctly and the main navigation does not contain broken links or broken pages.
 
-This project was built with [Lovable](https://lovable.dev).
 
-## Build with Lovable
+## Build by MALPINOH with AI assistant 
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/a77da7ae-1ddb-420e-8a3e-af9bd367f4f1).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
 - **Stay in sync**: every change made in Lovable is committed straight to this repository.
