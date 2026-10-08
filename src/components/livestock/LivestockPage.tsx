@@ -47,7 +47,7 @@ import {
 } from "@/lib/livestock";
 
 import { useAuth } from "@/hooks/use-auth";
-
+import { formatNaira } from "@/lib/access";
 import {
   AnimalFormDialog,
 } from "./AnimalFormDialog";
