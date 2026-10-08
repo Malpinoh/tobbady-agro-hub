@@ -352,11 +352,17 @@ function BatchActionDialog({
         throw new Error("Choose the destination section.");
       }
 
+      const movementType = action;
+
+if (!movementType) {
+  throw new Error("No movement type selected.");
+}
+
       const { error } = await supabase
-        .from("batch_movements")
-        .insert({
+          .from("batch_movements")
+          .insert({
           batch_id: batch.id,
-          movement_type: action,
+          movement_type: movementType,
           quantity: qty,
           occurred_on: date,
           to_section_id:
