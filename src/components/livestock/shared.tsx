@@ -25,7 +25,7 @@ export function SimpleSelect({ value, onChange, options, placeholder, allowNone,
   placeholder?: string; allowNone?: boolean; noneLabel?: string; disabled?: boolean; ariaLabel?: string;
 }) {
   return (
-    <Select value={value || (allowNone ? NONE : undefined)} onValueChange={(v) => onChange(v === NONE ? "" : v)} disabled={disabled}>
+    <Select value={value || (allowNone ? NONE : undefined)} onValueChange={(v) => onChange(v === NONE ? "" : v)} disabled={!!disabled}>
       <SelectTrigger aria-label={ariaLabel}><SelectValue placeholder={placeholder} /></SelectTrigger>
       <SelectContent>
         {allowNone && <SelectItem value={NONE}>{noneLabel}</SelectItem>}
