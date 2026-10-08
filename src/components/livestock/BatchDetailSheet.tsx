@@ -1,3 +1,4 @@
+```tsx
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -194,13 +195,17 @@ export function BatchDetailSheet({
                 <Section title="Financial">
                   <InfoRow label="Acquisition cost">
                     {batch.acquisition_cost != null
-                      ? `₦${Number(batch.acquisition_cost).toLocaleString("en-NG")}`
+                      ? `₦${Number(batch.acquisition_cost).toLocaleString(
+                          "en-NG",
+                        )}`
                       : "—"}
                   </InfoRow>
 
                   <InfoRow label="Estimated value / bird">
                     {batch.estimated_unit_value != null
-                      ? `₦${Number(batch.estimated_unit_value).toLocaleString("en-NG")}`
+                      ? `₦${Number(
+                          batch.estimated_unit_value,
+                        ).toLocaleString("en-NG")}`
                       : "—"}
                   </InfoRow>
 
@@ -354,13 +359,13 @@ function BatchActionDialog({
 
       const movementType = action;
 
-if (!movementType) {
-  throw new Error("No movement type selected.");
-}
+      if (!movementType) {
+        throw new Error("No movement type selected.");
+      }
 
       const { error } = await supabase
-          .from("batch_movements")
-          .insert({
+        .from("batch_movements")
+        .insert({
           batch_id: batch.id,
           movement_type: movementType,
           quantity: qty,
@@ -528,3 +533,4 @@ function Section({
     </section>
   );
 }
+```
