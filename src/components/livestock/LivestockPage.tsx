@@ -64,6 +64,11 @@ import {
   makeLookups,
 } from "./types";
 
+import {
+  AnimalFormDialog,
+} from "./AnimalFormDialog";
+import { BatchFormDialog } from "./BatchFormDialog";
+
 type Tab = "overview" | "animals" | "batches";
 
 const NONE = "__none";
