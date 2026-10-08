@@ -1,4 +1,3 @@
-```tsx
 import { createFileRoute } from "@tanstack/react-router";
 import LivestockPage from "@/components/livestock/LivestockPage";
 
@@ -26,4 +25,3 @@ export const Route = createFileRoute("/_authenticated/livestock")({
   }),
   component: LivestockPage,
 });
-```
