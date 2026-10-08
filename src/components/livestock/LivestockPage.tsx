@@ -34,7 +34,6 @@ import {
   StatusBadge,
 } from "@/components/app/PageKit";
 
-import { formatNaira } from "@/lib/access";
 import {
   animalsQuery,
   batchesQuery,
@@ -43,11 +42,17 @@ import {
   STATUS_TONE,
   titleCase,
   type Animal,
+  type Batch,
+  type BatchWithMovements,
 } from "@/lib/livestock";
+
+import { useAuth } from "@/hooks/use-auth";
 
 import {
   AnimalFormDialog,
 } from "./AnimalFormDialog";
+import { BatchDetailSheet } from "./BatchDetailSheet";
+import { BatchFormDialog } from "./BatchFormDialog";
 
 import {
   AnimalDetailSheet,
@@ -64,10 +69,6 @@ import {
   makeLookups,
 } from "./types";
 
-import {
-  AnimalFormDialog,
-} from "./AnimalFormDialog";
-import { BatchFormDialog } from "./BatchFormDialog";
 
 type Tab = "overview" | "animals" | "batches";
 
