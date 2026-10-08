@@ -981,6 +981,10 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      recalculate_batch_quantity: {
+        Args: { p_batch_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
