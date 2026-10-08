@@ -202,6 +202,57 @@ export type Database = {
           },
         ]
       }
+      batch_movements: {
+        Row: {
+          batch_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          movement_type: string
+          notes: string | null
+          occurred_on: string
+          quantity: number
+          to_section_id: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          movement_type: string
+          notes?: string | null
+          occurred_on?: string
+          quantity: number
+          to_section_id?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          occurred_on?: string
+          quantity?: number
+          to_section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_movements_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "animal_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_movements_to_section_id_fkey"
+            columns: ["to_section_id"]
+            isOneToOne: false
+            referencedRelation: "farm_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       breeds: {
         Row: {
           created_at: string
