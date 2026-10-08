@@ -19,7 +19,6 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   friendlyError,
   livestockKeys,
-  titleCase,
   type Batch,
 } from "@/lib/livestock";
 
