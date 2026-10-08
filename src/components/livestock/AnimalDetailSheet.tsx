@@ -38,7 +38,7 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
               <SheetHeader>
                 <div className="flex items-center gap-2">
                   <SheetTitle className="font-display text-xl">{a.tag_number}</SheetTitle>
-                  <StatusBadge tone={STATUS_TONE[a.status]}>{titleCase(a.status)}</StatusBadge>
+                  <StatusBadge tone={STATUS_TONE[a.status] ?? "neutral"}>{titleCase(a.status)}</StatusBadge>
                 </div>
                 <SheetDescription>{lk.typeName(a.livestock_type_id)} · {lk.breedName(a.breed_id)}</SheetDescription>
               </SheetHeader>
@@ -58,7 +58,7 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
                   <InfoRow label="Sex">{a.sex ? titleCase(a.sex) : "—"}</InfoRow>
                   <InfoRow label="Date of birth">{fmt(a.date_of_birth)}</InfoRow>
                   <InfoRow label="Age">{ageLabel(a.date_of_birth)}</InfoRow>
-                  <InfoRow label="Status"><StatusBadge tone={STATUS_TONE[a.status]}>{titleCase(a.status)}</StatusBadge></InfoRow>
+                  <InfoRow label="Status"><StatusBadge tone={STATUS_TONE[a.status] ?? "neutral"}>{titleCase(a.status)}</StatusBadge></InfoRow>
                 </Section>
                 <Section title="Location">
                   <InfoRow label="Farm">{lk.farmName(a.farm_section_id)}</InfoRow>

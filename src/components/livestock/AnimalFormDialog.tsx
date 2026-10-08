@@ -17,7 +17,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
   const { user } = useAuth();
   const qc = useQueryClient();
   const [f, setF] = useState(empty);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
   const types = refData.types.filter((t) => t.tracking_method === "individual" && (t.is_active || t.id === animal?.livestock_type_id));
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
 
   const save = useMutation({
     mutationFn: async () => {
-      const e: Record<string, string> = {};
+      const e: Partial<Record<keyof typeof empty, string>> = {};
       const tag = f.tag_number.trim();
       if (!tag) e.tag_number = "Tag number is required";
       if (!f.livestock_type_id) e.livestock_type_id = "Choose a livestock type";
