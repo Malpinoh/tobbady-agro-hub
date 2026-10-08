@@ -17,7 +17,6 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFarmOperationsRouteImport } from './routes/_authenticated/farm-operations'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
-import { Route as AuthenticatedLivestockRouteImport } from './routes/_authenticated/livestock'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedProcurementRouteImport } from './routes/_authenticated/procurement'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -64,11 +63,6 @@ const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
 const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedLivestockRoute = AuthenticatedLivestockRouteImport.update({
-  id: '/livestock',
-  path: '/livestock',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -118,7 +112,6 @@ export interface FileRoutesByFullPath {
   '/farm-operations': typeof AuthenticatedFarmOperationsRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
-  '/livestock': typeof AuthenticatedLivestockRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/procurement': typeof AuthenticatedProcurementRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -135,7 +128,6 @@ export interface FileRoutesByTo {
   '/farm-operations': typeof AuthenticatedFarmOperationsRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
-  '/livestock': typeof AuthenticatedLivestockRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/procurement': typeof AuthenticatedProcurementRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -154,7 +146,6 @@ export interface FileRoutesById {
   '/_authenticated/farm-operations': typeof AuthenticatedFarmOperationsRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
-  '/_authenticated/livestock': typeof AuthenticatedLivestockRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/procurement': typeof AuthenticatedProcurementRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -173,7 +164,6 @@ export interface FileRouteTypes {
     | '/farm-operations'
     | '/finance'
     | '/inventory'
-    | '/livestock'
     | '/notifications'
     | '/procurement'
     | '/reports'
@@ -190,7 +180,6 @@ export interface FileRouteTypes {
     | '/farm-operations'
     | '/finance'
     | '/inventory'
-    | '/livestock'
     | '/notifications'
     | '/procurement'
     | '/reports'
@@ -208,7 +197,6 @@ export interface FileRouteTypes {
     | '/_authenticated/farm-operations'
     | '/_authenticated/finance'
     | '/_authenticated/inventory'
-    | '/_authenticated/livestock'
     | '/_authenticated/notifications'
     | '/_authenticated/procurement'
     | '/_authenticated/reports'
@@ -282,13 +270,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInventoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/livestock': {
-      id: '/_authenticated/livestock'
-      path: '/livestock'
-      fullPath: '/livestock'
-      preLoaderRoute: typeof AuthenticatedLivestockRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/notifications': {
       id: '/_authenticated/notifications'
       path: '/notifications'
@@ -347,7 +328,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFarmOperationsRoute: typeof AuthenticatedFarmOperationsRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
-  AuthenticatedLivestockRoute: typeof AuthenticatedLivestockRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedProcurementRoute: typeof AuthenticatedProcurementRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -363,7 +343,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFarmOperationsRoute: AuthenticatedFarmOperationsRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
-  AuthenticatedLivestockRoute: AuthenticatedLivestockRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedProcurementRoute: AuthenticatedProcurementRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
