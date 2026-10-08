@@ -212,15 +212,25 @@ function AnimalTable({
 function BatchTable({
   batches,
   lk,
+  onSelect,
+  onAdd,
 }: {
-  batches: Awaited<ReturnType<typeof batchesQuery.queryFn>>;
+  batches: BatchWithMovements[];
   lk: ReturnType<typeof makeLookups>;
+  onSelect: (batch: BatchWithMovements) => void;
+  onAdd: () => void;
 }) {
   if (!batches.length) {
     return (
       <EmptyState
         title="No livestock batches"
         body="No poultry or other batch-tracked livestock batches have been registered yet."
+        action={
+          <Button onClick={onAdd}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add batch
+          </Button>
+        }
       />
     );
   }
@@ -254,7 +264,11 @@ function BatchTable({
               .reduce((sum, m) => sum + m.quantity, 0);
 
             return (
-              <tr key={batch.id} className="border-b last:border-0">
+              <tr
+                key={batch.id}
+                className="cursor-pointer border-b last:border-0 hover:bg-muted/40"
+                onClick={() => onSelect(batch)}
+              >
                 <td className="px-3 py-3 font-semibold">
                   {batch.batch_code}
                 </td>
@@ -299,7 +313,6 @@ function BatchTable({
     </div>
   );
 }
-
 export default function LivestockPage() {
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -308,6 +321,10 @@ export default function LivestockPage() {
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  const { can } = useAuth();
   
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -317,6 +334,11 @@ export default function LivestockPage() {
   const reference = useQuery(referenceQuery);
   const animals = useQuery(animalsQuery);
   const batches = useQuery(batchesQuery);
+
+  const selectedBatch =
+  (batches.data ?? []).find(
+    (batch) => batch.id === selectedBatchId,
+  ) ?? null;
 
   const refData = reference.data ?? {
     types: [],
@@ -767,7 +789,7 @@ export default function LivestockPage() {
           </Panel>
         )}
 
-       {tab === "batches" && (
+        {tab === "batches" && (
   <Panel
     title="Poultry & batch livestock"
     action={
@@ -779,7 +801,10 @@ export default function LivestockPage() {
         <RequirePermission perm="livestock.manage">
           <Button
             size="sm"
-            onClick={() => setBatchDialogOpen(true)}
+            onClick={() => {
+              setEditingBatch(null);
+              setBatchDialogOpen(true);
+            }}
           >
             <Plus className="mr-2 h-4 w-4" />
             Add batch
@@ -799,25 +824,15 @@ export default function LivestockPage() {
       <BatchTable
         batches={batches.data ?? []}
         lk={lk}
+        onSelect={(batch) => setSelectedBatchId(batch.id)}
+        onAdd={() => {
+          setEditingBatch(null);
+          setBatchDialogOpen(true);
+        }}
       />
     )}
   </Panel>
 )}
-            {batches.isLoading ? (
-              <LoadingRows />
-            ) : batches.error ? (
-              <ErrorState
-                error={batches.error}
-                onRetry={() => void batches.refetch()}
-              />
-            ) : (
-              <BatchTable
-                batches={batches.data ?? []}
-                lk={lk}
-              />
-            )}
-          </Panel>
-        )}
 
         <Panel title="Livestock data model">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -853,11 +868,20 @@ export default function LivestockPage() {
         refData={refData}
       />
       
-      <BatchFormDialog
-          open={batchDialogOpen}
-          onOpenChange={setBatchDialogOpen}
-          refData={refData}
-      />
+     <BatchFormDialog
+  open={batchDialogOpen}
+  onOpenChange={setBatchDialogOpen}
+  batch={editingBatch}
+  refData={refData}
+/>
+
+<BatchDetailSheet
+  batch={selectedBatch}
+  onClose={() => setSelectedBatchId(null)}
+  refData={refData}
+  lk={lk}
+  canManage={can("livestock.manage")}
+/>
       
       <AnimalDetailSheet
         animal={selectedAnimal}
@@ -867,7 +891,7 @@ export default function LivestockPage() {
           setEditingAnimal(animal);
           setAnimalDialogOpen(true);
         }}
-        canManage={true}
+        canManage={can("livestock.manage")}
         refData={refData}
         lk={lk}
       />
