@@ -1,7 +1,6 @@
 ```sql
 -- Recalculate batch current_quantity whenever a movement is recorded.
--- Business rule:
--- current_quantity = initial_quantity - mortality - sale - transfer - adjustment
+
 
 CREATE OR REPLACE FUNCTION public.recalculate_batch_quantity(p_batch_id uuid)
 RETURNS void
