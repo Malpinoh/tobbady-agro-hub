@@ -766,15 +766,42 @@ export default function LivestockPage() {
           </Panel>
         )}
 
-        {tab === "batches" && (
-          <Panel
-            title="Poultry & batch livestock"
-            action={
-              <StatusBadge tone="info">
-                {batches.data?.length ?? 0} batches
-              </StatusBadge>
-            }
+       {tab === "batches" && (
+  <Panel
+    title="Poultry & batch livestock"
+    action={
+      <div className="flex items-center gap-2">
+        <StatusBadge tone="info">
+          {batches.data?.length ?? 0} batches
+        </StatusBadge>
+
+        <RequirePermission perm="livestock.manage">
+          <Button
+            size="sm"
+            onClick={() => setBatchDialogOpen(true)}
           >
+            <Plus className="mr-2 h-4 w-4" />
+            Add batch
+          </Button>
+        </RequirePermission>
+      </div>
+    }
+  >
+    {batches.isLoading ? (
+      <LoadingRows />
+    ) : batches.error ? (
+      <ErrorState
+        error={batches.error}
+        onRetry={() => void batches.refetch()}
+      />
+    ) : (
+      <BatchTable
+        batches={batches.data ?? []}
+        lk={lk}
+      />
+    )}
+  </Panel>
+)}
             {batches.isLoading ? (
               <LoadingRows />
             ) : batches.error ? (
