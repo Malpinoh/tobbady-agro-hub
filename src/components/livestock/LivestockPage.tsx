@@ -851,7 +851,13 @@ export default function LivestockPage() {
         animal={editingAnimal}
         refData={refData}
       />
-
+      
+      <BatchFormDialog
+          open={batchDialogOpen}
+          onOpenChange={setBatchDialogOpen}
+          refData={refData}
+      />
+      
       <AnimalDetailSheet
         animal={selectedAnimal}
         onClose={() => setSelectedAnimal(null)}
