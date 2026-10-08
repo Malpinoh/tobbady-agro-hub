@@ -306,6 +306,8 @@ export default function LivestockPage() {
   const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null);
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
