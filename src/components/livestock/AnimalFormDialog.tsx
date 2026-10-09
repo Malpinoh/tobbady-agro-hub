@@ -11,7 +11,7 @@ import { ANIMAL_STATUSES, friendlyError, livestockKeys, titleCase, type Animal }
 import { Field, SectionPicker, SimpleSelect } from "./shared";
 import type { RefData } from "./types";
 
-const empty = { tag_number: "", livestock_type_id: "", breed_id: "", sex: "", date_of_birth: "", acquired_on: "", acquisition_cost: "", estimated_value: "", farm_id: "", farm_section_id: "", status: "active", notes: "" };
+const empty = { tag_number: "", livestock_type_id: "", breed_id: "", sex: "", date_of_birth: "", acquired_on: "", acquisition_cost: "", estimated_value: "", farm_id: "", farm_section_id: "", status: "active", notes: "", location_description: "" };
 
 export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open: boolean; onOpenChange: (o: boolean) => void; animal?: Animal | null; refData: RefData }) {
   const { user } = useAuth();
@@ -29,7 +29,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
         tag_number: animal.tag_number, livestock_type_id: animal.livestock_type_id, breed_id: animal.breed_id ?? "", sex: animal.sex ?? "",
         date_of_birth: animal.date_of_birth ?? "", acquired_on: animal.acquired_on ?? "",
         acquisition_cost: animal.acquisition_cost?.toString() ?? "", estimated_value: animal.estimated_value?.toString() ?? "",
-        farm_id: sec?.farm_id ?? "", farm_section_id: animal.farm_section_id ?? "", status: animal.status, notes: animal.notes ?? "",
+        farm_id: animal.farm_id ?? sec?.farm_id ?? "", farm_section_id: animal.farm_section_id ?? "", status: animal.status, notes: animal.notes ?? "", location_description: animal.location_description ?? "",
       });
     } else setF(empty);
   }, [open, animal, refData.sections]);
@@ -56,7 +56,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
         tag_number: tag, livestock_type_id: f.livestock_type_id, breed_id: f.breed_id || null, sex: f.sex || null,
         date_of_birth: f.date_of_birth || null, acquired_on: f.acquired_on || null,
         acquisition_cost: f.acquisition_cost ? Number(f.acquisition_cost) : null, estimated_value: f.estimated_value ? Number(f.estimated_value) : null,
-        farm_section_id: f.farm_section_id || null, status: f.status, notes: f.notes.trim() || null,
+        farm_id: f.farm_id || null, farm_section_id: f.farm_section_id || null, location_description: f.location_description.trim() || null, status: f.status, notes: f.notes.trim() || null,
       };
       const { error } = animal
         ? await supabase.from("animals").update(payload).eq("id", animal.id)
@@ -98,7 +98,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
             <Field label="Acquisition date" error={errors.acquired_on}><Input type="date" value={f.acquired_on} onChange={(e) => set("acquired_on")(e.target.value)} /></Field>
             <Field label="Acquisition cost (₦)" error={errors.acquisition_cost}><Input inputMode="decimal" value={f.acquisition_cost} onChange={(e) => set("acquisition_cost")(e.target.value)} /></Field>
             <Field label="Estimated current value (₦)" error={errors.estimated_value}><Input inputMode="decimal" value={f.estimated_value} onChange={(e) => set("estimated_value")(e.target.value)} /></Field>
-            <SectionPicker farms={refData.farms} sections={refData.sections} farmId={f.farm_id} sectionId={f.farm_section_id} onFarm={set("farm_id")} onSection={set("farm_section_id")} />
+            <SectionPicker   farms={refData.farms}   sections={refData.sections}   farmId={f.farm_id}   sectionId={f.farm_section_id}   onFarm={set("farm_id")}   onSection={set("farm_section_id")} />  <Field label="Specific location (optional)">   <Input     value={f.location_description}     onChange={(e) => set("location_description")(e.target.value)}     placeholder="e.g. Open Compound or Behind Poultry House"   /> </Field>
             <Field label="Status">
               <SimpleSelect value={f.status} onChange={set("status")} options={ANIMAL_STATUSES.map((s) => ({ value: s, label: titleCase(s) }))} />
             </Field>
