@@ -35,8 +35,9 @@ const empty = {
   estimated_unit_value: "",
   farm_id: "",
   farm_section_id: "",
-  status: "active",
-  notes: "",
+  status: "active", 
+  notes: "", 
+  location_description: "",
 };
 
 export function BatchFormDialog({
@@ -88,8 +89,9 @@ export function BatchFormDialog({
           batch.estimated_unit_value != null
             ? String(batch.estimated_unit_value)
             : "",
-        farm_id: section?.farm_id ?? "",
+        farm_id: batch.farm_id ?? section?.farm_id ?? "",
         farm_section_id: batch.farm_section_id ?? "",
+        location_description: batch.location_description ?? "",
         status: batch.status,
         notes: batch.notes ?? "",
       });
@@ -175,7 +177,9 @@ export function BatchFormDialog({
         estimated_unit_value: f.estimated_unit_value
           ? Number(f.estimated_unit_value)
           : null,
+        farm_id: f.farm_id || null,
         farm_section_id: f.farm_section_id || null,
+        location_description: f.location_description.trim() || null,
         status: f.status,
         notes: f.notes.trim() || null,
       };
@@ -372,6 +376,14 @@ export function BatchFormDialog({
               onFarm={set("farm_id")}
               onSection={set("farm_section_id")}
             />
+
+            <Field label="Specific location (optional)">
+  <Input
+    value={f.location_description}
+    onChange={(e) => set("location_description")(e.target.value)}
+    placeholder="e.g. Open Compound or Behind Poultry House"
+  />
+</Field>
 
             <Field label="Status">
               <SimpleSelect
