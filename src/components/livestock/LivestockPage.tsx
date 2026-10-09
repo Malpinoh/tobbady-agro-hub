@@ -293,12 +293,15 @@ function BatchTable({
                 </td>
 
                 <td className="px-3 py-3">
-                  <div>{lk.farmName(batch.farm_section_id)}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {lk.sectionName(batch.farm_section_id)}
-                  </div>
-                </td>
-
+              <div>
+                  {lk.farmNameById(batch.farm_id) !== "—"
+                  ? lk.farmNameById(batch.farm_id)
+                  : lk.farmName(batch.farm_section_id)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                  {batch.location_description || lk.sectionName(batch.farm_section_id)}
+              </div>
+            </td>
                 <td className="px-3 py-3">
                   <StatusBadge tone={statusTone(batch.status)}>
                     {titleCase(batch.status)}
