@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — TOBADDY AGRO LIVESTOCK" },
+      { title: "Dashboard || TOBADDY AGRO LIVESTOCK" },
       {
         name: "description",
         content: "Live business overview dashboard.",
