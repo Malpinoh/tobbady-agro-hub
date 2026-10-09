@@ -361,6 +361,92 @@ function CEOOffice() {
               </p>
             </div>
           </Panel>
+          
+          <Panel title="Strategic Reports" className="mt-6">
+            <div className="mb-4">
+              <h3 className="font-semibold">
+                Farm performance report
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Executive summary generated from the current dashboard data.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Livestock population
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? data.livestockCount.toLocaleString() : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Livestock valuation
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.livestockValue) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Sales this month
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlySales) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Other income this month
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlyIncome) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Expenses this month
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlyExpenses) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Estimated monthly surplus
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.estimatedProfit) : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border p-4">
+              <h4 className="font-semibold">Executive assessment</h4>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {data
+                  ? `The farm currently records ${data.livestockCount.toLocaleString()} livestock, with an estimated livestock value of ${money(data.livestockValue)}. Monthly sales and other income total ${money(data.monthlySales + data.monthlyIncome)}, against expenses of ${money(data.monthlyExpenses)}. The estimated surplus is ${money(data.estimatedProfit)}. ${data.lowStock.length > 0 ? `${data.lowStock.length} inventory item(s) require a stock-level review.` : "No inventory items currently meet the low-stock threshold."}`
+                  : "Report figures will appear when dashboard data is available."}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Print / Save as PDF
+              </button>
+            </div>
+          </Panel>
 
           <Panel title="Executive shortcuts" className="mt-6">
             <div className="grid gap-3 sm:grid-cols-2">
