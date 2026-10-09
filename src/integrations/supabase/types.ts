@@ -60,6 +60,8 @@ export type Database = {
           current_quantity: number
           estimated_unit_value: number | null
           farm_section_id: string | null
+          farm_id: string | null
+          location_description: string | null
           id: string
           initial_quantity: number
           livestock_type_id: string
@@ -77,6 +79,8 @@ export type Database = {
           current_quantity?: number
           estimated_unit_value?: number | null
           farm_section_id?: string | null
+          farm_id?: string | null
+          location_description?: string | null
           id?: string
           initial_quantity?: number
           livestock_type_id: string
@@ -94,6 +98,8 @@ export type Database = {
           current_quantity?: number
           estimated_unit_value?: number | null
           farm_section_id?: string | null
+          farm_id?: string | null
+          location_description?: string | null
           id?: string
           initial_quantity?: number
           livestock_type_id?: string
@@ -136,6 +142,8 @@ export type Database = {
           date_of_birth: string | null
           estimated_value: number | null
           farm_section_id: string | null
+          farm_id: string | null
+          location_description: string | null
           id: string
           livestock_type_id: string
           notes: string | null
@@ -153,6 +161,8 @@ export type Database = {
           date_of_birth?: string | null
           estimated_value?: number | null
           farm_section_id?: string | null
+          farm_id?: string | null
+          location_description?: string | null
           id?: string
           livestock_type_id: string
           notes?: string | null
@@ -170,6 +180,8 @@ export type Database = {
           date_of_birth?: string | null
           estimated_value?: number | null
           farm_section_id?: string | null
+          farm_id?: string | null
+          location_description?: string | null
           id?: string
           livestock_type_id?: string
           notes?: string | null
