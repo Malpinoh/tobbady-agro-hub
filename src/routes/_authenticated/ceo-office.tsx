@@ -305,6 +305,342 @@ function CEOOffice() {
               )}
             </Panel>
           </div>
+          
+          <Panel title="Executive Approvals" className="mt-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">
+                  Executive decision centre
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Review business requests and record executive decisions.
+                </p>
+              </div>
+              <StatusBadge tone="warning">
+                Database setup required
+              </StatusBadge>
+            </div>
+
+            <div className="rounded-xl border border-dashed p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <span className="text-xl">✓</span>
+              </div>
+
+              <h3 className="font-semibold">
+                Approval records are not connected yet
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                Once the approval database is configured, this section
+                will show pending requests, approval history, request
+                details, amounts, and the person responsible for each
+                decision.
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  Approve request
+                </button>
+
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  Reject request
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground">
+                Decisions are disabled until secure database storage
+                and permissions are configured.
+              </p>
+            </div>
+          </Panel>
+          
+          <Panel title="Strategic Reports" className="mt-6">
+            <div className="mb-4">
+              <h3 className="font-semibold">
+                Farm performance report
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Executive summary generated from the current dashboard data.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Livestock population
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? data.livestockCount.toLocaleString() : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Livestock valuation
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.livestockValue) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Sales this month
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlySales) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Other income this month
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlyIncome) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Expenses this month
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlyExpenses) : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Estimated monthly surplus
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.estimatedProfit) : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border p-4">
+              <h4 className="font-semibold">Executive assessment</h4>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {data
+                  ? `The farm currently records ${data.livestockCount.toLocaleString()} livestock, with an estimated livestock value of ${money(data.livestockValue)}. Monthly sales and other income total ${money(data.monthlySales + data.monthlyIncome)}, against expenses of ${money(data.monthlyExpenses)}. The estimated surplus is ${money(data.estimatedProfit)}. ${data.lowStock.length > 0 ? `${data.lowStock.length} inventory item(s) require a stock-level review.` : "No inventory items currently meet the low-stock threshold."}`
+                  : "Report figures will appear when dashboard data is available."}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Print / Save as PDF
+              </button>
+            </div>
+          </Panel>
+          
+          <Panel title="Business Targets" className="mt-6">
+            <div className="mb-4">
+              <h3 className="font-semibold">
+                Strategic performance targets
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Track management goals for livestock, revenue, sales,
+                and cost control.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Livestock population
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? data.livestockCount.toLocaleString() : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current position
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Target: Not configured
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Monthly sales
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlySales) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current month
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Target: Not configured
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Monthly income
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlySales + data.monthlyIncome) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sales plus other income
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Target: Not configured
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Monthly expenses
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlyExpenses) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current month
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Budget: Not configured
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-dashed p-5">
+              <h4 className="font-semibold">
+                Configure business goals
+              </h4>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Set measurable goals, assign a reporting period, and
+                monitor progress against actual farm performance.
+                Targets cannot be saved until the database is connected.
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Livestock growth</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Define a population goal for a selected period.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Revenue growth</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Set a monthly sales and income target.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Cost management</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Establish an expense budget and monitor overspending.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Performance review</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Compare actual results with approved targets.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <StatusBadge tone="warning">
+                  Target storage not connected
+                </StatusBadge>
+              </div>
+            </div>
+          </Panel>
+          
+          <Panel title="Board Documents" className="mt-6">
+            <div className="mb-4">
+              <h3 className="font-semibold">
+                Board and governance records
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A central place for board meeting minutes, resolutions,
+                strategic plans, and executive documents.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  title: "Meeting minutes",
+                  description: "Records of board and management meetings.",
+                },
+                {
+                  title: "Board resolutions",
+                  description: "Formal decisions and approved actions.",
+                },
+                {
+                  title: "Strategic plans",
+                  description: "Business plans and long-term objectives.",
+                },
+                {
+                  title: "Financial reports",
+                  description: "Reports prepared for executive review.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-lg border p-4"
+                >
+                  <h4 className="font-semibold">{item.title}</h4>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-xl border border-dashed p-6 text-center">
+              <h4 className="font-semibold">
+                Document library is not connected yet
+              </h4>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                When secure document storage is configured, authorized
+                users will be able to upload files, organize documents,
+                and view relevant board records.
+              </p>
+
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  Upload document
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  View documents
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground">
+                Uploading and viewing are disabled until secure storage
+                and access permissions are configured.
+              </p>
+            </div>
+          </Panel>
 
           <Panel title="Executive shortcuts" className="mt-6">
             <div className="grid gap-3 sm:grid-cols-2">
