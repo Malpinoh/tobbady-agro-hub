@@ -18,6 +18,7 @@ export function makeLookups(r: RefData) {
       const s = sectionId ? section.get(sectionId) : undefined;
       return s ? farm.get(s.farm_id)?.name ?? "—" : "—";
     },
+    farmNameById: (farmId: string | null) => (farmId ? farm.get(farmId)?.name ?? "—" : "—"),
   };
 }
 export type Lookups = ReturnType<typeof makeLookups>;
