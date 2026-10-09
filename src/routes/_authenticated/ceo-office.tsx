@@ -565,6 +565,82 @@ function CEOOffice() {
               </div>
             </div>
           </Panel>
+          
+          <Panel title="Board Documents" className="mt-6">
+            <div className="mb-4">
+              <h3 className="font-semibold">
+                Board and governance records
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A central place for board meeting minutes, resolutions,
+                strategic plans, and executive documents.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  title: "Meeting minutes",
+                  description: "Records of board and management meetings.",
+                },
+                {
+                  title: "Board resolutions",
+                  description: "Formal decisions and approved actions.",
+                },
+                {
+                  title: "Strategic plans",
+                  description: "Business plans and long-term objectives.",
+                },
+                {
+                  title: "Financial reports",
+                  description: "Reports prepared for executive review.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-lg border p-4"
+                >
+                  <h4 className="font-semibold">{item.title}</h4>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-xl border border-dashed p-6 text-center">
+              <h4 className="font-semibold">
+                Document library is not connected yet
+              </h4>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                When secure document storage is configured, authorized
+                users will be able to upload files, organize documents,
+                and view relevant board records.
+              </p>
+
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  Upload document
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  View documents
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground">
+                Uploading and viewing are disabled until secure storage
+                and access permissions are configured.
+              </p>
+            </div>
+          </Panel>
 
           <Panel title="Executive shortcuts" className="mt-6">
             <div className="grid gap-3 sm:grid-cols-2">
