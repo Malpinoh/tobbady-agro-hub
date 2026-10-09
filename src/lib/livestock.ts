@@ -6,6 +6,7 @@ import type { Tone } from "@/components/app/PageKit";
 
 type T = Database["public"]["Tables"];
 export type LivestockType = T["livestock_types"]["Row"];
+export type LivestockCategory = T["livestock_categories"]["Row"];
 export type Breed = T["breeds"]["Row"];
 export type Farm = T["farms"]["Row"];
 export type FarmSection = T["farm_sections"]["Row"];
