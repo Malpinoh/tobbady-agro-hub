@@ -447,6 +447,124 @@ function CEOOffice() {
               </button>
             </div>
           </Panel>
+          
+          <Panel title="Business Targets" className="mt-6">
+            <div className="mb-4">
+              <h3 className="font-semibold">
+                Strategic performance targets
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Track management goals for livestock, revenue, sales,
+                and cost control.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Livestock population
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? data.livestockCount.toLocaleString() : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current position
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Target: Not configured
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Monthly sales
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlySales) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current month
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Target: Not configured
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Monthly income
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlySales + data.monthlyIncome) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sales plus other income
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Target: Not configured
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Monthly expenses
+                </p>
+                <p className="mt-2 text-xl font-bold">
+                  {data ? money(data.monthlyExpenses) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current month
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Budget: Not configured
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-dashed p-5">
+              <h4 className="font-semibold">
+                Configure business goals
+              </h4>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Set measurable goals, assign a reporting period, and
+                monitor progress against actual farm performance.
+                Targets cannot be saved until the database is connected.
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Livestock growth</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Define a population goal for a selected period.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Revenue growth</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Set a monthly sales and income target.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Cost management</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Establish an expense budget and monitor overspending.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm font-medium">Performance review</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Compare actual results with approved targets.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <StatusBadge tone="warning">
+                  Target storage not connected
+                </StatusBadge>
+              </div>
+            </div>
+          </Panel>
 
           <Panel title="Executive shortcuts" className="mt-6">
             <div className="grid gap-3 sm:grid-cols-2">
