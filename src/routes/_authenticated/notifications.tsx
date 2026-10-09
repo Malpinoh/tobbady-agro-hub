@@ -82,6 +82,13 @@ function NotificationsPage() {
   const { user, roles } = useAuth();
   const queryClient = useQueryClient();
   const [demoMode, setDemoMode] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementRole, setAnnouncementRole] = useState("all");
+  const [announcementSeverity, setAnnouncementSeverity] = useState("announcement");
+  const [publishing, setPublishing] = useState(false);
+  const [publishMessage, setPublishMessage] = useState("");
+  const [publishError, setPublishError] = useState("");
   const [demoReadIds, setDemoReadIds] = useState<string[]>(
     demoNotifications
       .filter((item) => !!item.read_at)
@@ -298,6 +305,107 @@ async function publishNotification(event: React.FormEvent<HTMLFormElement>) {
             </p>
           </div>
         </div>
+
+        
+        {!demoMode && (
+          <form
+            onSubmit={publishNotification}
+            className="space-y-4 rounded-xl border bg-card p-5"
+          >
+            <div>
+              <h2 className="font-semibold">Publish a Notification</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Send an announcement to everyone or a selected staff role.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="announcement-title" className="text-sm font-medium">
+                Title
+              </label>
+              <input
+                id="announcement-title"
+                value={announcementTitle}
+                onChange={(event) => setAnnouncementTitle(event.target.value)}
+                maxLength={120}
+                required
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                placeholder="e.g. Important farm update"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="announcement-recipient" className="text-sm font-medium">
+                Send to
+              </label>
+              <select
+                id="announcement-recipient"
+                value={announcementRole}
+                onChange={(event) => setAnnouncementRole(event.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                <option value="all">Everyone</option>
+                <option value="ceo">CEO</option>
+                <option value="administrator">Administrator</option>
+                <option value="secretary">Secretary</option>
+                <option value="farm_manager">Farm Manager</option>
+                <option value="accountant">Accountant</option>
+                <option value="sales_officer">Sales Officer</option>
+                <option value="storekeeper">Storekeeper</option>
+                <option value="farm_worker">Farm Worker</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="announcement-severity" className="text-sm font-medium">
+                Notification type
+              </label>
+              <select
+                id="announcement-severity"
+                value={announcementSeverity}
+                onChange={(event) => setAnnouncementSeverity(event.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                <option value="announcement">Announcement</option>
+                <option value="info">Information</option>
+                <option value="urgent">Urgent</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="announcement-body" className="text-sm font-medium">
+                Message
+              </label>
+              <textarea
+                id="announcement-body"
+                value={announcementBody}
+                onChange={(event) => setAnnouncementBody(event.target.value)}
+                maxLength={3000}
+                required
+                rows={4}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                placeholder="Write your notification..."
+              />
+            </div>
+
+            {publishError && (
+              <p role="alert" className="text-sm text-destructive">
+                {publishError}
+              </p>
+            )}
+
+            {publishMessage && (
+              <p role="status" className="text-sm text-primary">
+                {publishMessage}
+              </p>
+            )}
+
+            <Button type="submit" disabled={publishing}>
+              {publishing ? "Publishing..." : "Publish notification"}
+            </Button>
+          </form>
+        )}
 
         {!demoMode && notificationsQuery.isError && (
           <div className="rounded-lg border border-destructive/40 p-4 text-sm">
