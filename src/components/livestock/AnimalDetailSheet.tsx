@@ -60,11 +60,28 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
                   <InfoRow label="Age">{ageLabel(a.date_of_birth)}</InfoRow>
                   <InfoRow label="Status"><StatusBadge tone={STATUS_TONE[a.status] ?? "neutral"}>{titleCase(a.status)}</StatusBadge></InfoRow>
                 </Section>
-                <Section title="Location">
-                  <InfoRow label="Farm">{lk.farmName(a.farm_section_id)}</InfoRow>
-                  <InfoRow label="Section">{lk.sectionName(a.farm_section_id)}</InfoRow>
-                  <InfoRow label="Current location">{a.farm_section_id ? `${lk.farmName(a.farm_section_id)} / ${lk.sectionName(a.farm_section_id)}` : a.status === "active" ? "Unassigned" : titleCase(a.status)}</InfoRow>
-                </Section>
+                
+<Section title="Location">
+  <InfoRow label="Farm">
+    {lk.farmNameById(a.farm_id) !== "—"
+      ? lk.farmNameById(a.farm_id)
+      : lk.farmName(a.farm_section_id)}
+  </InfoRow>
+  <InfoRow label="Section">
+    {lk.sectionName(a.farm_section_id)}
+  </InfoRow>
+  <InfoRow label="Current location">
+    {a.location_description ||
+      (a.farm_section_id
+        ? `${lk.farmName(a.farm_section_id)} / ${lk.sectionName(a.farm_section_id)}`
+        : a.farm_id
+          ? lk.farmNameById(a.farm_id)
+          : a.status === "active"
+            ? "Unassigned"
+            : titleCase(a.status))}
+  </InfoRow>
+</Section>
+
                 <Section title="Financial">
                   <InfoRow label="Acquisition cost">{a.acquisition_cost != null ? formatNaira(Number(a.acquisition_cost)) : "—"}</InfoRow>
                   <InfoRow label="Estimated current value">{a.estimated_value != null ? formatNaira(Number(a.estimated_value)) : "—"}</InfoRow>
