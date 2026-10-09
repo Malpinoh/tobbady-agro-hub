@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -9,11 +10,60 @@ import {
   AlertTriangle,
   Info,
   Megaphone,
+  RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader, RequirePermission } from "@/components/app/PageKit";
 import { Button } from "@/components/ui/button";
+
+type DemoNotification = {
+  id: string;
+  title: string;
+  body: string;
+  severity: string;
+  target_role: "administrator" | null;
+  user_id: string | null;
+  read_at: string | null;
+  link: string | null;
+  created_at: string;
+};
+
+const demoNotifications: DemoNotification[] = [
+  {
+    id: "demo-1",
+    title: "Welcome to TOBADDY AGRO LIVESTOCK",
+    body: "Your notification centre is ready. Important farm updates will appear here.",
+    severity: "info",
+    target_role: "administrator",
+    user_id: null,
+    read_at: null,
+    link: null,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "demo-2",
+    title: "Livestock Management Reminder",
+    body: "Remember to keep animal records and livestock batch quantities up to date.",
+    severity: "announcement",
+    target_role: "administrator",
+    user_id: null,
+    read_at: null,
+    link: null,
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: "demo-3",
+    title: "Example Alert",
+    body: "This is a sample alert for testing the notification display.",
+    severity: "urgent",
+    target_role: "administrator",
+    user_id: null,
+    read_at: new Date(Date.now() - 7200000).toISOString(),
+    link: null,
+    created_at: new Date(Date.now() - 7200000).toISOString(),
+  },
+];
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
@@ -31,10 +81,16 @@ export const Route = createFileRoute("/_authenticated/notifications")({
 function NotificationsPage() {
   const { user, roles } = useAuth();
   const queryClient = useQueryClient();
+  const [demoMode, setDemoMode] = useState(true);
+  const [demoReadIds, setDemoReadIds] = useState<string[]>(
+    demoNotifications
+      .filter((item) => !!item.read_at)
+      .map((item) => item.id),
+  );
 
   const notificationsQuery = useQuery({
     queryKey: ["notifications", user?.id, roles],
-    enabled: !!user,
+    enabled: !!user && !demoMode,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
@@ -56,16 +112,37 @@ function NotificationsPage() {
     },
   });
 
-  const notifications = notificationsQuery.data ?? [];
+  const liveNotifications = notificationsQuery.data ?? [];
+
+  const notifications = demoMode
+    ? demoNotifications.map((item) => ({
+        ...item,
+        read_at: demoReadIds.includes(item.id)
+          ? item.read_at || new Date().toISOString()
+          : item.read_at && !demoNotifications
+              .filter((demo) => demo.id === item.id)
+              .some((demo) => !demo.read_at)
+            ? item.read_at
+            : null,
+      }))
+    : liveNotifications;
+
   const unreadCount = notifications.filter(
     (item) => !item.read_at,
   ).length;
 
   async function markAsRead(id: string) {
-    const item = notifications.find((notification) => notification.id === id);
+    if (demoMode) {
+      setDemoReadIds((current) =>
+        current.includes(id) ? current : [...current, id],
+      );
+      return;
+    }
 
-    // Personal notifications can be marked read individually.
-    // Role-wide notifications need a per-user read-receipt design.
+    const item = liveNotifications.find(
+      (notification) => notification.id === id,
+    );
+
     if (!item || item.user_id !== user?.id || item.read_at) return;
 
     const { error } = await supabase
@@ -82,6 +159,14 @@ function NotificationsPage() {
     await queryClient.invalidateQueries({
       queryKey: ["notifications"],
     });
+  }
+
+  function resetDemo() {
+    setDemoReadIds(
+      demoNotifications
+        .filter((item) => !!item.read_at)
+        .map((item) => item.id),
+    );
   }
 
   const severityIcon = (severity: string) => {
@@ -104,25 +189,48 @@ function NotificationsPage() {
           title="Notifications"
           description="Alerts and messages for your role."
           actions={
-            <Button
-              variant="outline"
-              onClick={() =>
-                queryClient.invalidateQueries({
-                  queryKey: ["notifications"],
-                })
-              }
-              disabled={notificationsQuery.isFetching}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (demoMode) {
+                    resetDemo();
+                  } else {
+                    void queryClient.invalidateQueries({
+                      queryKey: ["notifications"],
+                    });
+                  }
+                }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {demoMode ? "Reset Demo" : "Refresh"}
+              </Button>
+              <Button
+                variant={demoMode ? "default" : "outline"}
+                onClick={() => setDemoMode((current) => !current)}
+              >
+                {demoMode ? "Exit Demo Preview" : "Show Demo Preview"}
+              </Button>
+            </div>
           }
         />
+
+        {demoMode && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+            <strong>DEMO — NOT SAVED</strong>
+            <p className="mt-1">
+              These are sample notifications. Marking them as read only changes
+              this page's temporary preview; nothing is written to the database.
+            </p>
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Total Notifications</p>
+              <p className="text-sm text-muted-foreground">
+                Total Notifications
+              </p>
               <Bell className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="mt-3 text-2xl font-bold">
@@ -149,14 +257,14 @@ function NotificationsPage() {
           </div>
         </div>
 
-        {notificationsQuery.isError && (
+        {!demoMode && notificationsQuery.isError && (
           <div className="rounded-lg border border-destructive/40 p-4 text-sm">
             Notifications could not be loaded. Check your database access
             policies and try refreshing.
           </div>
         )}
 
-        {notificationsQuery.isLoading ? (
+        {!demoMode && notificationsQuery.isLoading ? (
           <div className="rounded-xl border p-10 text-center text-muted-foreground">
             Loading notifications...
           </div>
@@ -171,9 +279,13 @@ function NotificationsPage() {
         ) : (
           <div className="overflow-hidden rounded-xl border">
             <div className="border-b p-4">
-              <h2 className="font-semibold">Recent Notifications</h2>
+              <h2 className="font-semibold">
+                {demoMode ? "Sample Notifications" : "Recent Notifications"}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your personal notifications and alerts for your assigned role.
+                {demoMode
+                  ? "Use these samples to test the notification interface."
+                  : "Personal notifications and alerts for your assigned role."}
               </p>
             </div>
 
@@ -225,7 +337,7 @@ function NotificationsPage() {
                       </a>
                     )}
 
-                    {!item.read_at && item.user_id === user?.id && (
+                    {!item.read_at && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -243,15 +355,16 @@ function NotificationsPage() {
           </div>
         )}
 
-        <div className="rounded-xl border p-4">
-          <h2 className="font-semibold">Notifications module</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This page reads existing notifications from the database. Approval
-            requests, announcement publishing, and individual read receipts
-            for role-wide alerts require their respective workflows and
-            database policies.
-          </p>
-        </div>
+        {!demoMode && (
+          <div className="rounded-xl border p-4">
+            <h2 className="font-semibold">Notifications module</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Approval requests, announcement publishing, and individual
+              read receipts for role-wide alerts require their respective
+              workflows and database policies.
+            </p>
+          </div>
+        )}
       </div>
     </RequirePermission>
   );
