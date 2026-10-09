@@ -305,6 +305,62 @@ function CEOOffice() {
               )}
             </Panel>
           </div>
+          
+          <Panel title="Executive Approvals" className="mt-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">
+                  Executive decision centre
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Review business requests and record executive decisions.
+                </p>
+              </div>
+              <StatusBadge tone="warning">
+                Database setup required
+              </StatusBadge>
+            </div>
+
+            <div className="rounded-xl border border-dashed p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <span className="text-xl">✓</span>
+              </div>
+
+              <h3 className="font-semibold">
+                Approval records are not connected yet
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                Once the approval database is configured, this section
+                will show pending requests, approval history, request
+                details, amounts, and the person responsible for each
+                decision.
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  Approve request
+                </button>
+
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+                >
+                  Reject request
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground">
+                Decisions are disabled until secure database storage
+                and permissions are configured.
+              </p>
+            </div>
+          </Panel>
 
           <Panel title="Executive shortcuts" className="mt-6">
             <div className="grid gap-3 sm:grid-cols-2">
