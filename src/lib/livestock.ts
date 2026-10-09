@@ -94,6 +94,17 @@ export const referenceQuery = queryOptions({
   },
 });
 
+export const livestockCategoriesQuery = queryOptions({
+  queryKey: [...livestockKeys.all, "categories"],
+  queryFn: () =>
+    must(
+      supabase
+        .from("livestock_categories")
+        .select("*")
+        .order("sort_order"),
+    ),
+});
+
 export const animalsQuery = queryOptions({
   queryKey: [...livestockKeys.all, "animals"],
   queryFn: () => must(supabase.from("animals").select("*").order("created_at", { ascending: false })),
