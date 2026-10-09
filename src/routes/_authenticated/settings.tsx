@@ -1,5 +1,7 @@
 
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   KeyRound,
@@ -7,15 +9,24 @@ import {
   UserRound,
   Mail,
   ShieldCheck,
+  Plus,
+  Pencil,
+  X,
+  RefreshCw,
 } from "lucide-react";
+
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { ALL_ROLES, ROLE_LABELS } from "@/lib/access";
+import { slugify, friendlyError } from "@/lib/livestock";
 import {
   PageHeader,
   Panel,
   RequirePermission,
   StatusBadge,
 } from "@/components/app/PageKit";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -23,21 +34,179 @@ export const Route = createFileRoute("/_authenticated/settings")({
       { title: "Settings — TOBADDY AGRO LIVESTOCK" },
       {
         name: "description",
-        content: "System configuration and your profile.",
+        content: "Manage farm settings, livestock types and your profile.",
       },
     ],
   }),
   component: SettingsPage,
 });
 
+type TrackingMethod = "individual" | "batch";
+
+type TypeForm = {
+  name: string;
+  category_id: string;
+  tracking_method: TrackingMethod;
+  unit_label: string;
+};
+
+const emptyForm: TypeForm = {
+  name: "",
+  category_id: "",
+  tracking_method: "individual",
+  unit_label: "head",
+};
+
 function SettingsPage() {
-  const { user, profile, roles } = useAuth();
+  const { user, profile, roles, can } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<TypeForm>(emptyForm);
+  const [formOpen, setFormOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+
+  const typesQuery = useQuery({
+    queryKey: ["settings", "livestock-types"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("livestock_types")
+        .select("*")
+        .order("sort_order")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ["settings", "livestock-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("livestock_categories")
+        .select("*")
+        .order("sort_order")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const name = form.name.trim();
+      const slug = slugify(name);
+
+      if (!name) throw new Error("Enter a livestock type name.");
+      if (!slug) throw new Error("Enter a valid livestock type name.");
+      if (!form.unit_label.trim()) {
+        throw new Error("Enter a unit label, such as head or birds.");
+      }
+
+      const payload = {
+        name,
+        slug,
+        category_id: form.category_id || null,
+        tracking_method: form.tracking_method,
+        unit_label: form.unit_label.trim(),
+      };
+
+      if (editingId) {
+        const { error } = await supabase
+          .from("livestock_types")
+          .update(payload)
+          .eq("id", editingId);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("livestock_types")
+          .insert(payload);
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["settings", "livestock-types"],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["livestock"] });
+      setForm(emptyForm);
+      setEditingId(null);
+      setFormOpen(false);
+      setMessage("Livestock type saved successfully.");
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async ({
+      id,
+      active,
+    }: {
+      id: string;
+      active: boolean;
+    }) => {
+      const { error } = await supabase
+        .from("livestock_types")
+        .update({ is_active: active })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["settings", "livestock-types"],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["livestock"] });
+      setMessage("Livestock type status updated.");
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  const types = (typesQuery.data ?? []).filter((type) => {
+    const matchesSearch = type.name
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+
+    return matchesSearch && (showInactive || type.is_active);
+  });
+
+  function startAdd() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setMessage("");
+    setFormOpen(true);
+  }
+
+  function startEdit(type: NonNullable<typeof typesQuery.data>[number]) {
+    setEditingId(type.id);
+    setForm({
+      name: type.name,
+      category_id: type.category_id ?? "",
+      tracking_method: type.tracking_method,
+      unit_label: type.unit_label,
+    });
+    setMessage("");
+    setFormOpen(true);
+  }
+
+  function cancelForm() {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    setMessage("");
+  }
 
   return (
     <RequirePermission perm="settings.view">
       <PageHeader
         title="Settings"
-        description="System configuration and your profile."
+        description="Manage farm configuration, livestock types and your profile."
       />
 
       <div className="space-y-6">
@@ -49,9 +218,7 @@ function SettingsPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-semibold">My Profile</h2>
-                <StatusBadge tone="info">
-                  Signed-in account
-                </StatusBadge>
+                <StatusBadge tone="info">Signed-in account</StatusBadge>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 Your account details and assigned access roles.
@@ -99,8 +266,289 @@ function SettingsPage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Profile editing will be enabled in a later stage.
-            These details are read-only for now.
+            Profile details are currently read-only.
+          </p>
+        </Panel>
+
+        <Panel
+          title="Livestock Types"
+          action={
+            <Button
+              size="sm"
+              onClick={startAdd}
+              disabled={!can("settings.manage")}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Type
+            </Button>
+          }
+        >
+          <p className="mb-4 text-sm text-muted-foreground">
+            Configure the types used by individual animal records and livestock
+            batches. Deactivating a type preserves existing records.
+          </p>
+
+          {!can("settings.manage") && (
+            <div className="mb-4 rounded-lg border p-3 text-sm text-muted-foreground">
+              You can view livestock types, but you need settings management
+              permission to add, edit or deactivate them.
+            </div>
+          )}
+
+          {message && (
+            <div
+              role="status"
+              className="mb-4 rounded-lg border bg-muted/40 p-3 text-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span>{message}</span>
+                <button
+                  type="button"
+                  aria-label="Dismiss message"
+                  onClick={() => setMessage("")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {formOpen && (
+            <form
+              className="mb-6 space-y-4 rounded-xl border bg-muted/20 p-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (can("settings.manage")) saveMutation.mutate();
+              }}
+            >
+              <h3 className="font-semibold">
+                {editingId ? "Edit livestock type" : "Add livestock type"}
+              </h3>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium">Type name *</span>
+                  <Input
+                    required
+                    value={form.name}
+                    placeholder="e.g. Cow, Goat, Broilers"
+                    onChange={(event) =>
+                      setForm({ ...form, name: event.target.value })
+                    }
+                  />
+                </label>
+
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium">Category</span>
+                  <select
+                    className="h-10 w-full rounded-md border bg-background px-3"
+                    value={form.category_id}
+                    onChange={(event) =>
+                      setForm({ ...form, category_id: event.target.value })
+                    }
+                  >
+                    <option value="">No category selected</option>
+                    {(categoriesQuery.data ?? [])
+                      .filter((category) => category.is_active)
+                      .map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                  </select>
+                  {categoriesQuery.isError && (
+                    <span className="text-xs text-destructive">
+                      Categories could not be loaded. You can still save
+                      without selecting a category.
+                    </span>
+                  )}
+                </label>
+
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium">Tracking method *</span>
+                  <select
+                    className="h-10 w-full rounded-md border bg-background px-3"
+                    value={form.tracking_method}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        tracking_method: event.target.value as TrackingMethod,
+                        unit_label:
+                          event.target.value === "batch" ? "birds" : "head",
+                      })
+                    }
+                  >
+                    <option value="individual">Individual animal</option>
+                    <option value="batch">Batch / group</option>
+                  </select>
+                  <span className="text-xs text-muted-foreground">
+                    Individual tracks each animal separately. Batch tracks a
+                    group by quantity.
+                  </span>
+                </label>
+
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium">Unit label *</span>
+                  <Input
+                    required
+                    value={form.unit_label}
+                    placeholder="e.g. head or birds"
+                    onChange={(event) =>
+                      setForm({ ...form, unit_label: event.target.value })
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={saveMutation.isPending}>
+                  {saveMutation.isPending
+                    ? "Saving..."
+                    : editingId
+                      ? "Save Changes"
+                      : "Create Type"}
+                </Button>
+                <Button type="button" variant="outline" onClick={cancelForm}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+            <Input
+              value={search}
+              placeholder="Search livestock types..."
+              onChange={(event) => setSearch(event.target.value)}
+            />
+
+            <label className="flex shrink-0 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(event) => setShowInactive(event.target.checked)}
+              />
+              Show inactive types
+            </label>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void typesQuery.refetch();
+                void categoriesQuery.refetch();
+              }}
+              disabled={typesQuery.isFetching}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+
+          {typesQuery.isPending ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Loading livestock types...
+            </p>
+          ) : typesQuery.isError ? (
+            <div className="rounded-lg border p-4 text-sm">
+              <p className="font-medium">Could not load livestock types.</p>
+              <p className="mt-1 text-muted-foreground">
+                {friendlyError(typesQuery.error)}
+              </p>
+              <Button
+                className="mt-3"
+                variant="outline"
+                size="sm"
+                onClick={() => void typesQuery.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : types.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center">
+              <PawPrint className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="mt-3 font-medium">No livestock types found</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Try another search or add a livestock type.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="px-3 py-3 font-medium">Name</th>
+                    <th className="px-3 py-3 font-medium">Tracking</th>
+                    <th className="px-3 py-3 font-medium">Unit</th>
+                    <th className="px-3 py-3 font-medium">Status</th>
+                    <th className="px-3 py-3 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {types.map((type) => (
+                    <tr key={type.id} className="border-b last:border-0">
+                      <td className="px-3 py-3">
+                        <div className="font-semibold">{type.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {type.slug}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        {type.tracking_method === "individual"
+                          ? "Individual"
+                          : "Batch / group"}
+                      </td>
+                      <td className="px-3 py-3">{type.unit_label}</td>
+                      <td className="px-3 py-3">
+                        <StatusBadge
+                          tone={type.is_active ? "success" : "neutral"}
+                        >
+                          {type.is_active ? "Active" : "Inactive"}
+                        </StatusBadge>
+                      </td>
+                      <td className="px-3 py-3">
+                        {can("settings.manage") ? (
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEdit(type)}
+                            >
+                              <Pencil className="mr-1 h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={statusMutation.isPending}
+                              onClick={() => {
+                                setMessage("");
+                                statusMutation.mutate({
+                                  id: type.id,
+                                  active: !type.is_active,
+                                });
+                              }}
+                            >
+                              {type.is_active ? "Deactivate" : "Activate"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            View only
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            Existing animals and batches are not deleted when a type is
+            deactivated. Inactive types are hidden from this list unless you
+            enable “Show inactive types”.
           </p>
         </Panel>
 
@@ -109,12 +557,6 @@ function SettingsPage() {
             icon={Building2}
             title="Business Profile"
             description="Set up the farm's official name, contact details, address and business information."
-          />
-
-          <SettingsFeature
-            icon={PawPrint}
-            title="Livestock Types"
-            description="Configure the livestock categories used throughout the farm records."
           />
 
           <SettingsFeature
@@ -131,17 +573,15 @@ function SettingsPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold">Profile Management</h3>
-                  <StatusBadge tone="warning">
-                    Coming later
-                  </StatusBadge>
+                  <StatusBadge tone="warning">Coming later</StatusBadge>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Update your display name and other personal account details.
+                  Update your display name and personal account details.
                 </p>
               </div>
             </div>
             <div className="mt-4 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-              Current system roles:{" "}
+              System roles:{" "}
               {ALL_ROLES.map((role) => ROLE_LABELS[role]).join(", ")}.
             </div>
           </Panel>
@@ -171,9 +611,7 @@ function SettingsFeature({
             <h3 className="font-semibold">{title}</h3>
             <StatusBadge tone="warning">Coming later</StatusBadge>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
     </Panel>
