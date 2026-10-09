@@ -81,7 +81,7 @@ export const Route = createFileRoute("/_authenticated/notifications")({
 function NotificationsPage() {
   const { user, roles } = useAuth();
   const queryClient = useQueryClient();
-  const [demoMode, setDemoMode] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
   const [demoReadIds, setDemoReadIds] = useState<string[]>(
     demoNotifications
       .filter((item) => !!item.read_at)
