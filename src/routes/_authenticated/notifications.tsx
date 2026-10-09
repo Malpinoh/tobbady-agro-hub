@@ -84,7 +84,7 @@ function NotificationsPage() {
   const [demoMode, setDemoMode] = useState(false);
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementBody, setAnnouncementBody] = useState("");
-  const [announcementRole, setAnnouncementRole] = useState("all");
+  const [announcementRole, setAnnouncementRole] = useState<   | "all"   | "ceo"   | "secretary"   | "farm_manager"   | "accountant"   | "sales_officer"   | "storekeeper"   | "farm_worker"   | "administrator" >("all");
   const [announcementSeverity, setAnnouncementSeverity] = useState("announcement");
   const [publishing, setPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState("");
