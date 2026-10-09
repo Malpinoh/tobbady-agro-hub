@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, X, RefreshCw, Tags } from "lucide-react";
@@ -130,7 +129,7 @@ export default function LivestockConfigPage() {
   };
 
   return (
-    <RequirePermission perm="livestock.view">
+    <RequirePermission perm="livestock.config.manage">
       <PageHeader
         title="Livestock Configuration"
         description="Manage the categories used to organize your farm's livestock."
