@@ -161,6 +161,48 @@ function NotificationsPage() {
     });
   }
 
+  
+async function publishNotification(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+
+  const title = announcementTitle.trim();
+  const body = announcementBody.trim();
+
+  if (!title || !body || !user) {
+    setPublishError("Enter a title and message, and sign in first.");
+    return;
+  }
+
+  setPublishing(true);
+  setPublishError("");
+  setPublishMessage("");
+
+  const { error } = await supabase.from("notifications").insert({
+    title,
+    body,
+    severity: announcementSeverity,
+    target_role: announcementRole === "all" ? null : announcementRole,
+    user_id: null,
+    link: null,
+  });
+
+  setPublishing(false);
+
+  if (error) {
+    setPublishError(
+      "Could not publish. Database permissions may need updating: " +
+        error.message
+    );
+    return;
+  }
+
+  setAnnouncementTitle("");
+  setAnnouncementBody("");
+  setPublishMessage("Notification published successfully.");
+  await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+}
+
+  
   function resetDemo() {
     setDemoReadIds(
       demoNotifications
