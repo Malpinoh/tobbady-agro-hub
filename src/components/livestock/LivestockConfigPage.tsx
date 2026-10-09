@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import LivestockTypeManager from "./LivestockTypeManager";
 
 export default function LivestockConfigPage() {
   const { can } = useAuth();
@@ -303,6 +304,10 @@ export default function LivestockConfigPage() {
             </div>
           )}
         </Panel>
+      </div>
+
+      <div className="mt-8">
+        <LivestockTypeManager />
       </div>
     </RequirePermission>
   );
