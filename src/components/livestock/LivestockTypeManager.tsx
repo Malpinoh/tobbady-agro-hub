@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Panel } from "@/components/ui/panel";
-import { StatusBadge } from "@/components/ui/status-badge";
+
+import { Panel, StatusBadge } from "@/components/app/PageKit";
 
 type TypeForm = {
   name: string;
@@ -310,7 +310,7 @@ export default function LivestockTypeManager() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{type.name}</span>
-                      <StatusBadge status={type.is_active ? "active" : "inactive"} />
+                      <StatusBadge tone={type.is_active ? "success" : "neutral"}>   {type.is_active ? "Active" : "Inactive"} </StatusBadge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {categoryNames.get(type.category_id ?? "") ?? "Uncategorised"}
