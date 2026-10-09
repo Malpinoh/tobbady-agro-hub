@@ -722,7 +722,15 @@ export type Database = {
           unit_label?: string
           updated_at?: string
         }
-        Relationships: []
+                Relationships: [
+          {
+            foreignKeyName: "livestock_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "livestock_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
