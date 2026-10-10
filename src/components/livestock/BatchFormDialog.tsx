@@ -427,7 +427,7 @@ export function BatchFormDialog({
             {save.isPending
               ? "Saving…"
               : batch
-                ? "Save changes"
+                ? "Request edit approval"
                 : "Add batch"}
           </Button>
         </DialogFooter>
