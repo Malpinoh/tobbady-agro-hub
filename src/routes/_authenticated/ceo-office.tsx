@@ -553,6 +553,58 @@ function CEOOffice() {
               </button>
             </div>
           )}
+          
+          {approval.status === "approved" &&
+            approval.payment_status !== "paid" &&
+            !approval.expense_id && (
+              <button
+                type="button"
+                disabled={paymentMutation.isPending}
+                onClick={() => {
+                  const spentOn = window.prompt(
+                    "Enter the date the purchase was paid (YYYY-MM-DD):",
+                    new Date().toISOString().slice(0, 10)
+                  );
+                  if (!spentOn) return;
+
+                  const category = window.prompt(
+                    "Enter the expense category:",
+                    "Other expenses"
+                  );
+                  if (!category?.trim()) return;
+
+                  const reference = window.prompt(
+                    "Enter payment reference (optional):",
+                    ""
+                  );
+                  if (reference === null) return;
+
+                  if (
+                    window.confirm(
+                      `Record ₦${Number(approval.amount).toLocaleString()} as PAID on ${spentOn}? This will create the actual expense.`
+                    )
+                  ) {
+                    paymentMutation.mutate({
+                      id: approval.id,
+                      spentOn,
+                      reference,
+                      category,
+                    });
+                  }
+                }}
+                className="mt-4 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                {paymentMutation.isPending
+                  ? "Recording payment..."
+                  : "Record purchase as paid"}
+              </button>
+            )}
+
+          {approval.payment_status === "paid" && (
+            <p className="mt-3 text-sm font-medium text-green-700">
+              Purchase recorded as paid.
+            </p>
+          )}
         </div>
       ))}
     </div>
