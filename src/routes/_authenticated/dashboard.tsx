@@ -42,13 +42,15 @@ function Dashboard() {
       ] = await Promise.all([
         supabase
           .from("animal_batches")
-          .select("id, current_quantity, estimated_unit_value, livestock_type_id, status"),
+          .select("id, current_quantity, estimated_unit_value, livestock_type_id, status")
+          .eq("approval_status", "approved"),
         supabase
           .from("livestock_types")
           .select("id, name, unit_label"),
         supabase
           .from("animals")
-          .select("id, estimated_value, livestock_type_id, status"),
+          .select("id, estimated_value, livestock_type_id, status")
+          .eq("approval_status", "approved"),
         supabase
           .from("sales")
           .select("id, sale_date, total_amount, status"),
@@ -60,7 +62,8 @@ function Dashboard() {
           .select("id, received_on, amount, status"),
         supabase
           .from("inventory_items")
-          .select("id, name, quantity_on_hand, reorder_level, unit"),
+          .select("id, name, quantity_on_hand, reorder_level, unit")
+          .eq("approval_status", "approved"),
       ]);
 
       const results = [
