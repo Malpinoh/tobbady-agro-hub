@@ -207,7 +207,7 @@ export function BatchFormDialog({
       toast.success(
         batch
           ? "Batch updated successfully"
-          : "Batch added successfully",
+          : "Batch submitted for CEO/Administrator approval",
       );
 
       void qc.invalidateQueries({
