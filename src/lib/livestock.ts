@@ -107,14 +107,14 @@ export const livestockCategoriesQuery = queryOptions({
 
 export const animalsQuery = queryOptions({
   queryKey: [...livestockKeys.all, "animals"],
-  queryFn: () => must(supabase.from("animals").select("*").order("created_at", { ascending: false })),
+  queryFn: () => must(supabase.from("animals").select("*").eq("approval_status", "approved").order("created_at", { ascending: false })),
 });
 
 export const batchesQuery = queryOptions({
   queryKey: [...livestockKeys.all, "batches"],
   queryFn: async () =>
     (await must(
-      supabase.from("animal_batches").select("*, batch_movements(movement_type, quantity)").order("created_at", { ascending: false }),
+      supabase.from("animal_batches").select("*, batch_movements(movement_type, quantity)").eq("approval_status", "approved").order("created_at", { ascending: false }),
     )) as BatchWithMovements[],
 });
 
