@@ -158,6 +158,26 @@ function CEOOffice() {
   });
 
   const data = query.data;
+  
+  const approvalsQuery = useQuery({
+    queryKey: ["ceo-executive-approvals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("executive_approvals")
+        .select(
+          "id, title, request_details, amount, status, requested_by, decision_notes, created_at"
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const approvals = approvalsQuery.data ?? [];
+  const pendingApprovals = approvals.filter(
+    (approval) => approval.status === "pending"
+  );
 
   const stats = [
     {
