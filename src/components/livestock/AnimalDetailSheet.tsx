@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ArrowRightLeft, BadgeDollarSign, Pencil, Skull } from "lucide-react";
+import { ArrowRightLeft, BadgeDollarSign, Pencil, Skull, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,8 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
               </SheetHeader>
               {canManage && (
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" onClick={() => onEdit(a)}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => onEdit(a)}><Pencil className="mr-1.5 h-3.5 w-3.5" />Request edit</Button>
+                  <DeletionRequestButton recordType="animal" recordId={a.id} label={a.tag_number} original={a} />
                   <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("transfer")}><ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />Record transfer</Button>
                   <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("mortality")}><Skull className="mr-1.5 h-3.5 w-3.5" />Record mortality</Button>
                   <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("sold")}><BadgeDollarSign className="mr-1.5 h-3.5 w-3.5" />Mark as sold</Button>
@@ -102,6 +103,25 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
       {a && <ActionDialog animal={a} action={action} onClose={() => setAction(null)} refData={refData} lk={lk} />}
     </>
   );
+}
+
+
+function DeletionRequestButton({ recordType, recordId, label, original }: { recordType: "animal" | "batch"; recordId: string; label: string; original: unknown }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
+  async function submit() {
+    if (reason.trim().length < 5) { toast.error("Please explain the reason (at least 5 characters)."); return; }
+    setSaving(true);
+    const { error } = await (supabase as any).from("record_change_requests").insert({ record_type: recordType, record_id: recordId, request_type: "delete", record_label: label, reason: reason.trim(), original_values: original });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deletion request sent to CEO/Administrator");
+    setOpen(false); setReason("");
+    void qc.invalidateQueries({ queryKey: ["record-approvals-pending"] });
+  }
+  return <><Button variant="destructive" size="sm" onClick={() => setOpen(true)}><Trash2 className="mr-1.5 h-3.5 w-3.5" />Request deletion</Button><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Request deletion — {label}</DialogTitle><DialogDescription>The record will remain unchanged until the CEO/Administrator approves. Explain why it should be deleted.</DialogDescription></DialogHeader><Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Duplicate entry or wrong animal details (minimum 5 characters)" /><DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button variant="destructive" disabled={saving || reason.trim().length < 5} onClick={() => void submit()}>{saving ? "Submitting…" : "Submit deletion request"}</Button></DialogFooter></DialogContent></Dialog></>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
