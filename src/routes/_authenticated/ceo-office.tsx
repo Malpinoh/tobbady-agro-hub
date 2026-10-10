@@ -266,7 +266,46 @@ function CEOOffice() {
     },
   });
 
+  
+  const paymentMutation = useMutation({
+    mutationFn: async ({
+      id,
+      spentOn,
+      reference,
+      category,
+    }: {
+      id: string;
+      spentOn: string;
+      reference: string;
+      category: string;
+    }) => {
+      const { data, error } = await supabase.rpc(
+        "record_approved_purchase_as_paid",
+        {
+          p_approval_id: id,
+          p_spent_on: spentOn,
+          p_reference: reference.trim() || null,
+          p_category: category.trim(),
+        }
+      );
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["ceo-executive-approvals"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["ceo-office-live-data"],
+        }),
+      ]);
+    },
+  });
+
   const stats = [
+    
     {
       label: "Livestock Count",
       value: data?.livestockCount.toLocaleString() ?? "—",
