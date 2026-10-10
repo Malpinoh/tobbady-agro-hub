@@ -385,7 +385,7 @@ const paidExpenses = expenses
           </div>
           <div className="mt-3 text-2xl font-semibold">{formatNaira(netBalance)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Income minus approved expenses
+            Income minus actual expenses paid
           </p>
         </div>
 
