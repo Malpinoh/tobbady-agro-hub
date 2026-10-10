@@ -185,11 +185,8 @@ export function BatchFormDialog({
       };
 
       if (batch) {
-        const { error } = await supabase
-          .from("animal_batches")
-          .update(payload)
-          .eq("id", batch.id);
-
+        if (editReason.trim().length < 5) throw new Error("Please explain why this edit is needed (at least 5 characters).");
+        const { error } = await (supabase as any).from("record_change_requests").insert({ record_type: "batch", record_id: batch.id, request_type: "edit", record_label: batch.batch_code, reason: editReason.trim(), proposed_values: payload, original_values: batch, requested_by: user?.id });
         if (error) throw new Error(error.message);
       } else {
         const { error } = await supabase
@@ -206,7 +203,7 @@ export function BatchFormDialog({
     onSuccess: () => {
       toast.success(
         batch
-          ? "Batch updated successfully"
+          ? "Edit request submitted for CEO/Administrator approval"
           : "Batch submitted for CEO/Administrator approval",
       );
 
@@ -235,7 +232,7 @@ export function BatchFormDialog({
           </DialogTitle>
 
           <DialogDescription>
-            Create a batch for poultry or other livestock tracked by quantity.
+            Create a batch for poultry or other livestock tracked by quantity. {batch ? "Changes will be sent to the CEO/Administrator for approval." : ""}
             Current quantity is automatically calculated from recorded
             movements.
           </DialogDescription>
@@ -255,6 +252,7 @@ export function BatchFormDialog({
               save.mutate();
             }}
           >
+            {batch && <Field label="Reason for edit request" required className="sm:col-span-2"><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what is incorrect and why it needs changing (minimum 5 characters)" /></Field>}
             <Field
               label="Batch code"
               required
