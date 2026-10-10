@@ -48,7 +48,7 @@ function Dashboard() {
           .select("id, name, unit_label"),
         supabase
           .from("animals")
-          .select("id, estimated_value"),
+          .select("id, estimated_value, livestock_type_id, status"),
         supabase
           .from("sales")
           .select("id, sale_date, total_amount, status"),
@@ -80,6 +80,12 @@ function Dashboard() {
       const batches = batchesResult.data ?? [];
       const types = typesResult.data ?? [];
       const animals = animalsResult.data ?? [];
+      const activeAnimals = animals.filter(
+        (animal) =>
+          !["sold", "inactive", "deceased", "dead"].includes(
+            String(animal.status ?? "active").toLowerCase(),
+          ),
+      );
       const sales = salesResult.data ?? [];
       const expenses = expensesResult.data ?? [];
       const income = incomeResult.data ?? [];
@@ -102,7 +108,7 @@ function Dashboard() {
         0
       );
 
-      const animalCount = animals.length;
+      const animalCount = activeAnimals.length;
       const totalLivestock = batchCount + animalCount;
 
       const batchValue = activeBatches.reduce(
@@ -113,18 +119,22 @@ function Dashboard() {
         0
       );
 
-      const animalValue = animals.reduce(
+      const animalValue = activeAnimals.reduce(
         (sum, animal) => sum + number(animal.estimated_value),
         0
       );
 
       const livestockSummary = types.map((type) => {
-        const quantity = activeBatches
+        const batchQuantity = activeBatches
           .filter((batch) => batch.livestock_type_id === type.id)
           .reduce(
             (sum, batch) => sum + number(batch.current_quantity),
             0
           );
+        const individualQuantity = activeAnimals.filter(
+          (animal) => animal.livestock_type_id === type.id,
+        ).length;
+        const quantity = batchQuantity + individualQuantity;
 
         return {
           id: type.id,
