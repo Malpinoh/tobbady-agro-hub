@@ -1098,6 +1098,10 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: undefined
       }
+      reset_test_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
