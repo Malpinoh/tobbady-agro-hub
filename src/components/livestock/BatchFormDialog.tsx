@@ -254,7 +254,6 @@ export function BatchFormDialog({
               save.mutate();
             }}
           >
-            {batch && <Field label="Reason for edit request" required className="sm:col-span-2"><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what is incorrect and why it needs changing (minimum 5 characters)" /></Field>}
             {batch && <Field label="Reason for edit request" required><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what needs correcting and why (minimum 5 characters)" /></Field>}
             <Field
               label="Batch code"
