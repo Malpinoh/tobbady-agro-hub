@@ -196,7 +196,7 @@ function SecretaryOffice() {
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <Summary icon={CalendarDays} label="Upcoming meetings" value={String(upcoming)} />
-          <Summary icon={MailIcon} label="Open correspondence" value={String(openLetters)} />
+          <Summary icon={Mail} label="Open correspondence" value={String(openLetters)} />
           <Summary icon={Users} label="Visitors on site" value={String(visitorsOnSite)} />
         </div>
 
