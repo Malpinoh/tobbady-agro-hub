@@ -363,61 +363,119 @@ function CEOOffice() {
             </Panel>
           </div>
           
-          <Panel title="Executive Approvals" className="mt-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-semibold">
-                  Executive decision centre
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Review business requests and record executive decisions.
-                </p>
-              </div>
-              <StatusBadge tone="warning">
-                Database setup required
-              </StatusBadge>
-            </div>
+          
+<Panel title="Executive Approvals" className="mt-6">
+  <div className="mb-4">
+    <h3 className="font-semibold">Executive decision centre</h3>
+    <p className="mt-1 text-sm text-muted-foreground">
+      Review requests and record executive decisions.
+    </p>
+  </div>
 
-            <div className="rounded-xl border border-dashed p-6 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <span className="text-xl">✓</span>
-              </div>
-
-              <h3 className="font-semibold">
-                Approval records are not connected yet
-              </h3>
-
-              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-                Once the approval database is configured, this section
-                will show pending requests, approval history, request
-                details, amounts, and the person responsible for each
-                decision.
-              </p>
-
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
-                >
-                  Approve request
-                </button>
-
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
-                >
-                  Reject request
-                </button>
-              </div>
-
-              <p className="mt-3 text-xs text-muted-foreground">
-                Decisions are disabled until secure database storage
-                and permissions are configured.
+  {approvalsQuery.isLoading ? (
+    <p className="text-sm text-muted-foreground">
+      Loading approval requests...
+    </p>
+  ) : approvalsQuery.isError ? (
+    <div className="rounded-lg border p-4">
+      <p className="text-sm text-destructive">
+        Could not load approval requests.
+      </p>
+      <button
+        type="button"
+        onClick={() => void approvalsQuery.refetch()}
+        className="mt-2 rounded-lg border px-3 py-2 text-sm"
+      >
+        Try again
+      </button>
+    </div>
+  ) : approvals.length === 0 ? (
+    <div className="rounded-xl border border-dashed p-6 text-center">
+      <h4 className="font-semibold">No approval requests yet</h4>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Requests submitted by staff will appear here when they are
+        available to your account.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {approvals.map((approval) => (
+        <div key={approval.id} className="rounded-xl border p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="font-semibold">{approval.title}</h4>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Submitted{" "}
+                {new Date(approval.created_at).toLocaleString()}
               </p>
             </div>
-          </Panel>
+            <span className="rounded-full border px-3 py-1 text-xs font-medium capitalize">
+              {approval.status}
+            </span>
+          </div>
+
+          {approval.request_details && (
+            <p className="mt-3 whitespace-pre-wrap text-sm">
+              {approval.request_details}
+            </p>
+          )}
+
+          {approval.amount != null && (
+            <p className="mt-2 text-sm font-semibold">
+              Amount: {money(amount(approval.amount))}
+            </p>
+          )}
+
+          {approval.decision_notes && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Decision notes: {approval.decision_notes}
+            </p>
+          )}
+
+          {approval.status === "pending" && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={decisionMutation.isPending}
+                onClick={() =>
+                  decisionMutation.mutate({
+                    id: approval.id,
+                    status: "approved",
+                  })
+                }
+                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                Approve
+              </button>
+
+              <button
+                type="button"
+                disabled={decisionMutation.isPending}
+                onClick={() =>
+                  decisionMutation.mutate({
+                    id: approval.id,
+                    status: "rejected",
+                  })
+                }
+                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+
+  {decisionMutation.isError && (
+    <p className="mt-4 text-sm text-destructive">
+      The decision could not be saved. Check your permissions and try
+      again.
+    </p>
+  )}
+</Panel>
+
           
           <Panel title="Strategic Reports" className="mt-6">
             <div className="mb-4">
