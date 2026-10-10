@@ -167,9 +167,11 @@ function CEOOffice() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("executive_approvals")
-        .select(
-          "id, title, request_details, amount, status, requested_by, decision_notes, created_at"
-        )
+        
+.select(
+  "id, title, request_details, amount, status, requested_by, decision_notes, created_at, payment_status, paid_at, paid_by, expense_id"
+)
+
         .order("created_at", { ascending: false });
 
       if (error) throw error;
