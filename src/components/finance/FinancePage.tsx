@@ -56,6 +56,7 @@ type ExpenseRecord = {
   approved_by: string | null;
   reference: string | null;
   status: string;
+  payment_status: string;
   created_at: string;
 };
 
@@ -140,11 +141,19 @@ function FinanceContent() {
     .filter((record) => record.status === "approved")
     .reduce((sum, record) => sum + Number(record.amount), 0);
 
+const paidExpenses = expenses
+  .filter(
+    (record) =>
+      record.payment_status === "paid" &&
+      record.status !== "rejected" &&
+      record.status !== "cancelled",
+  )
+  .reduce((sum, record) => sum + Number(record.amount), 0);
   const pendingExpenses = expenses.filter(
     (record) => record.status === "pending",
   );
 
-  const netBalance = totalIncome - approvedExpenses;
+  const netBalance = totalIncome - paidExpenses;
 
   const combinedRecords = useMemo(() => {
     const incomeRows = incomes.map((record) => ({
@@ -342,6 +351,7 @@ function FinanceContent() {
           </p>
         </div>
 
+        
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-sm">Approved expenses</span>
@@ -352,6 +362,19 @@ function FinanceContent() {
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Expenses approved for payment
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-5">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-sm">Actual expenses paid</span>
+            <ArrowDownCircle className="h-5 w-5" />
+          </div>
+          <div className="mt-3 text-2xl font-semibold">
+            {formatNaira(paidExpenses)}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Payments recorded as completed
           </p>
         </div>
 
