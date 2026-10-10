@@ -103,9 +103,20 @@ export function BatchDetailSheet({
                 </SheetDescription>
               </SheetHeader>
 
-              {canManage && (
-                <div className="mt-4 flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => onEdit(batch)}><Pencil className="mr-1.5 h-3.5 w-3.5" />Request edit</Button><DeletionRequestButton recordType="batch" recordId={batch.id} label={batch.batch_code} original={batch} /></div>
-              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => onEdit(batch)}>
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                  Request edit
+                </Button>
+                {canManage && (
+                  <DeletionRequestButton
+                    recordType="batch"
+                    recordId={batch.id}
+                    label={batch.batch_code}
+                    original={batch}
+                  />
+                )}
+              </div>
               {canManage && batch.current_quantity > 0 && (
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Button
