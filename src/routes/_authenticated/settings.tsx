@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -573,13 +573,13 @@ function RolePermissionsSection() {
   const [message, setMessage] = useState("");
   const canManagePermissions =
     can("settings.manage") && (hasRole("ceo") || hasRole("administrator"));
-  const editableRoles = ALL_ROLES.filter((role) => !roles.includes(role));
+  const firstEditableRole = ALL_ROLES.find((role) => role !== "ceo" && !roles.includes(role)) ?? "farm_worker";
 
   useEffect(() => {
-    if (editableRoles.length && !editableRoles.includes(selectedRole)) {
-      setSelectedRole(editableRoles[0]);
+    if (selectedRole === "ceo" || roles.includes(selectedRole)) {
+      setSelectedRole(firstEditableRole);
     }
-  }, [editableRoles.join("|"), selectedRole]);
+  }, [firstEditableRole, roles, selectedRole]);
 
   const permissionsQuery = useQuery({
     queryKey: ["settings", "permissions"],
@@ -784,7 +784,7 @@ function ProfileManagementSection() {
     }
   }, [profileQuery.data, user?.email]);
 
-  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     if (!user) {
