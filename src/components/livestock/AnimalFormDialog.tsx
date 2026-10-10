@@ -18,6 +18,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
   const qc = useQueryClient();
   const [f, setF] = useState(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
+  const [editReason, setEditReason] = useState("");
   const types = refData.types.filter((t) => t.tracking_method === "individual" && (t.is_active || t.id === animal?.livestock_type_id));
 
   useEffect(() => {
@@ -58,13 +59,17 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
         acquisition_cost: f.acquisition_cost ? Number(f.acquisition_cost) : null, estimated_value: f.estimated_value ? Number(f.estimated_value) : null,
         farm_id: f.farm_id || null, farm_section_id: f.farm_section_id || null, location_description: f.location_description.trim() || null, status: f.status, notes: f.notes.trim() || null,
       };
-      const { error } = animal
-        ? await supabase.from("animals").update(payload).eq("id", animal.id)
-        : await supabase.from("animals").insert({ ...payload, created_by: user?.id ?? null });
-      if (error) throw new Error(error.message);
+      if (animal) {
+        if (editReason.trim().length < 5) throw new Error("Please explain why this edit is needed (at least 5 characters).");
+        const { error } = await (supabase as any).from("record_change_requests").insert({ record_type: "animal", record_id: animal.id, request_type: "edit", record_label: animal.tag_number, reason: editReason.trim(), proposed_values: payload, original_values: animal, requested_by: user?.id });
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from("animals").insert({ ...payload, created_by: user?.id ?? null });
+        if (error) throw new Error(error.message);
+      }
     },
     onSuccess: () => {
-      toast.success(animal ? "Animal updated" : "Animal submitted for CEO/Administrator approval");
+      toast.success(animal ? "Edit request submitted for CEO/Administrator approval" : "Animal submitted for CEO/Administrator approval");
       void qc.invalidateQueries({ queryKey: livestockKeys.all });
       onOpenChange(false);
     },
@@ -76,12 +81,13 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{animal ? `Edit ${animal.tag_number}` : "Add animal"}</DialogTitle>
-          <DialogDescription>Individually tracked livestock, identified by tag number.</DialogDescription>
+          <DialogDescription>Individually tracked livestock, identified by tag number. {animal ? "Changes will be sent to the CEO/Administrator for approval." : ""}</DialogDescription>
         </DialogHeader>
         {!types.length ? (
           <p className="text-sm text-muted-foreground">No active individually tracked livestock types exist. Add one under Types &amp; Breeds.</p>
         ) : (
           <form id="animal-form" className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+            {animal && <Field label="Reason for edit request" required className="sm:col-span-2"><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what is incorrect and why it needs changing (minimum 5 characters)" /></Field>}
             <Field label="Tag number" required error={errors.tag_number}><Input value={f.tag_number} onChange={(e) => set("tag_number")(e.target.value)} placeholder="e.g. CT-0012" /></Field>
             <Field label="Livestock type" required error={errors.livestock_type_id}>
               <SimpleSelect value={f.livestock_type_id} onChange={(v) => { set("livestock_type_id")(v); set("breed_id")(""); }} placeholder="Select type"
@@ -107,7 +113,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" form="animal-form" disabled={save.isPending || !types.length}>{save.isPending ? "Saving…" : animal ? "Save changes" : "Add animal"}</Button>
+          <Button type="submit" form="animal-form" disabled={save.isPending || !types.length}>{save.isPending ? "Submitting…" : animal ? "Request edit approval" : "Add animal"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
