@@ -133,7 +133,11 @@ export const movementsQuery = (batchId: string) =>
 
 /** Turn Postgres errors into readable messages. */
 export function friendlyError(e: unknown): string {
-  const msg = e instanceof Error ? e.message : String(e);
+  const msg = e instanceof Error
+    ? e.message
+    : typeof e === "object" && e !== null && "message" in e
+      ? String((e as { message?: unknown }).message ?? JSON.stringify(e))
+      : String(e);
   if (/animals_tag_number_key|duplicate key.*tag_number/.test(msg)) return "That tag number is already in use.";
   if (/batch_code/.test(msg) && /duplicate/.test(msg)) return "That batch code is already in use.";
   if (/breeds_livestock_type_id_name/.test(msg)) return "That breed already exists for this livestock type.";
