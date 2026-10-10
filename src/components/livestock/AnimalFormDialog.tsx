@@ -64,7 +64,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      toast.success(animal ? "Animal updated" : "Animal added to the register");
+      toast.success(animal ? "Animal updated" : "Animal submitted for CEO/Administrator approval");
       void qc.invalidateQueries({ queryKey: livestockKeys.all });
       onOpenChange(false);
     },
