@@ -178,6 +178,43 @@ function CEOOffice() {
   const pendingApprovals = approvals.filter(
     (approval) => approval.status === "pending"
   );
+  
+  const queryClient = useQueryClient();
+
+  const decisionMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "approved" | "rejected";
+    }) => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
+      if (!user) throw new Error("Please sign in first.");
+
+      const { error } = await supabase
+        .from("executive_approvals")
+        .update({
+          status,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("status", "pending");
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["ceo-executive-approvals"],
+      });
+    },
+  });
 
   const stats = [
     {
