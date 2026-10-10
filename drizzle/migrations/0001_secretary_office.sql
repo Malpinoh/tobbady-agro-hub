@@ -56,16 +56,16 @@ alter table public.secretary_visitors enable row level security;
 drop policy if exists "Secretary office readers can view meetings" on public.secretary_meetings;
 create policy "Secretary office readers can view meetings"
 on public.secretary_meetings for select to authenticated
-using (public.has_permission('secretary.view', auth.uid()));
+using (public.has_permission(auth.uid(), 'secretary.view'));
 
 drop policy if exists "Secretary office staff can create meetings" on public.secretary_meetings;
 create policy "Secretary office staff can create meetings"
 on public.secretary_meetings for insert to authenticated
 with check (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
   and (created_by is null or created_by = auth.uid())
 );
 
@@ -73,41 +73,41 @@ drop policy if exists "Secretary office staff can update meetings" on public.sec
 create policy "Secretary office staff can update meetings"
 on public.secretary_meetings for update to authenticated
 using (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 )
 with check (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 );
 
 drop policy if exists "Secretary office staff can delete meetings" on public.secretary_meetings;
 create policy "Secretary office staff can delete meetings"
 on public.secretary_meetings for delete to authenticated
 using (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 );
 
 drop policy if exists "Secretary office readers can view correspondence" on public.secretary_correspondence;
 create policy "Secretary office readers can view correspondence"
 on public.secretary_correspondence for select to authenticated
-using (public.has_permission('secretary.view', auth.uid()));
+using (public.has_permission(auth.uid(), 'secretary.view'));
 
 drop policy if exists "Secretary office staff can create correspondence" on public.secretary_correspondence;
 create policy "Secretary office staff can create correspondence"
 on public.secretary_correspondence for insert to authenticated
 with check (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
   and (created_by is null or created_by = auth.uid())
 );
 
@@ -115,41 +115,41 @@ drop policy if exists "Secretary office staff can update correspondence" on publ
 create policy "Secretary office staff can update correspondence"
 on public.secretary_correspondence for update to authenticated
 using (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 )
 with check (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 );
 
 drop policy if exists "Secretary office staff can delete correspondence" on public.secretary_correspondence;
 create policy "Secretary office staff can delete correspondence"
 on public.secretary_correspondence for delete to authenticated
 using (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 );
 
 drop policy if exists "Secretary office readers can view visitors" on public.secretary_visitors;
 create policy "Secretary office readers can view visitors"
 on public.secretary_visitors for select to authenticated
-using (public.has_permission('secretary.view', auth.uid()));
+using (public.has_permission(auth.uid(), 'secretary.view'));
 
 drop policy if exists "Secretary office staff can create visitors" on public.secretary_visitors;
 create policy "Secretary office staff can create visitors"
 on public.secretary_visitors for insert to authenticated
 with check (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
   and (recorded_by is null or recorded_by = auth.uid())
 );
 
@@ -157,26 +157,26 @@ drop policy if exists "Secretary office staff can update visitors" on public.sec
 create policy "Secretary office staff can update visitors"
 on public.secretary_visitors for update to authenticated
 using (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 )
 with check (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 );
 
 drop policy if exists "Secretary office staff can delete visitors" on public.secretary_visitors;
 create policy "Secretary office staff can delete visitors"
 on public.secretary_visitors for delete to authenticated
 using (
-  public.has_permission('secretary.view', auth.uid())
-  and (public.has_role('secretary'::public.app_role, auth.uid())
-    or public.has_role('ceo'::public.app_role, auth.uid())
-    or public.has_role('administrator'::public.app_role, auth.uid()))
+  public.has_permission(auth.uid(), 'secretary.view')
+  and (public.has_role(auth.uid(), 'secretary'::public.app_role)
+    or public.has_role(auth.uid(), 'ceo'::public.app_role)
+    or public.has_role(auth.uid(), 'administrator'::public.app_role))
 );
 
 create or replace function public.set_secretary_office_updated_at()
