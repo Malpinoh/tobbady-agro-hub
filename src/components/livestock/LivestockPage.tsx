@@ -886,6 +886,11 @@ export default function LivestockPage() {
 <BatchDetailSheet
   batch={selectedBatch}
   onClose={() => setSelectedBatchId(null)}
+  onEdit={(batch) => {
+    setSelectedBatchId(null);
+    setEditingBatch(batch);
+    setBatchDialogOpen(true);
+  }}
   refData={refData}
   lk={lk}
   canManage={can("livestock.manage")}
