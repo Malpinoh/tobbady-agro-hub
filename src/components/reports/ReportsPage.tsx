@@ -41,6 +41,40 @@ function StatCard({
   );
 }
 
+function formatActivityDescription(item: {
+  action: string | null;
+  description: string | null;
+  table_name: string | null;
+  record_id: string | null;
+}) {
+  const savedDescription = item.description?.trim();
+  if (savedDescription) return savedDescription;
+
+  const actionLabels: Record<string, string> = {
+    insert: "Created",
+    update: "Updated",
+    delete: "Deleted",
+  };
+  const action = (item.action ?? "").toLowerCase();
+  const verb = actionLabels[action] ?? (action ? action[0].toUpperCase() + action.slice(1) : "Changed");
+  const tableLabels: Record<string, string> = {
+    animals: "animal record",
+    animal_batches: "animal batch",
+    inventory_items: "inventory item",
+    inventory_transactions: "inventory transaction",
+    role_permissions: "role permission",
+    livestock_types: "livestock type",
+    sales: "sale",
+    expenses: "expense",
+    income: "income record",
+  };
+  const table = item.table_name
+    ? tableLabels[item.table_name] ?? item.table_name.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+    : "record";
+  const record = item.record_id ? ` (ID: ${item.record_id})` : "";
+  return `${verb} ${table}${record}. Detailed description was not saved by the audit logger.`;
+}
+
 export function ReportsPage() {
   const { can } = useAuth();
   const [tab, setTab] = useState<ReportTab>("profit");
@@ -493,7 +527,7 @@ export function ReportsPage() {
                           {new Date(item.created_at).toLocaleString()}
                         </td>
                         <td className="p-4">{item.action}</td>
-                        <td className="p-4">{item.description || "—"}</td>
+                        <td className="p-4">{formatActivityDescription(item)}</td>
                         <td className="p-4">{item.table_name || "—"}</td>
                         <td className="p-4">{item.user_id || "—"}</td>
                       </tr>
