@@ -179,6 +179,51 @@ function CEOOffice() {
     (approval) => approval.status === "pending"
   );
   
+  const targetsQuery = useQuery({
+    queryKey: ["ceo-business-targets"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_targets")
+        .select(
+          "id, title, metric, target_value, period_start, period_end, notes"
+        )
+        .order("period_start", { ascending: false });
+
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const targetMutation = useMutation({
+    mutationFn: async (target: {
+      title: string;
+      metric: string;
+      target_value: number;
+      period_start: string;
+      period_end: string;
+      notes: string | null;
+    }) => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
+      if (!user) throw new Error("Please sign in first.");
+
+      const { error } = await supabase
+        .from("business_targets")
+        .insert({ ...target, created_by: user.id });
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["ceo-business-targets"],
+      });
+    },
+  });
+
   const queryClient = useQueryClient();
 
   const decisionMutation = useMutation({
