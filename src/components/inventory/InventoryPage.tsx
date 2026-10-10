@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader, RequirePermission } from "@/components/app/PageKit";
+import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
 
 type InventoryItem = {
   id: string;
@@ -105,6 +106,7 @@ function InventoryContent() {
       const { data, error } = await supabase
         .from("inventory_items")
         .select("*")
+        .eq("approval_status", "approved")
         .order("name");
 
       if (error) throw error;
@@ -248,7 +250,9 @@ function InventoryContent() {
       }
 
       setItemDialog(false);
+      if (!editingItem) alert("Inventory item submitted for CEO/Administrator approval. It will not count as stock until approved.");
       await queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
+      await queryClient.invalidateQueries({ queryKey: ["record-approvals-pending"] });
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not save inventory item.");
     } finally {
@@ -381,6 +385,8 @@ function InventoryContent() {
           ) : undefined
         }
       />
+
+      <PendingApprovalsPanel />
 
       {(itemsQuery.isError || transactionsQuery.isError) && (
         <div className="rounded-lg border border-destructive/40 p-4 text-sm text-destructive">
