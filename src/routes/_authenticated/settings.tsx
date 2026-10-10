@@ -13,6 +13,8 @@ import {
   Pencil,
   X,
   RefreshCw,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -559,6 +561,8 @@ function SettingsPage() {
 
           <ProfileManagementSection />
         </div>
+
+        <ResetTestDataSection />
       </div>
     </RequirePermission>
   );
@@ -1096,3 +1100,86 @@ function BusinessProfileSection() {
     </Panel>
   );
 }
+
+function ResetTestDataSection() {
+  const { roles } = useAuth();
+  const queryClient = useQueryClient();
+  const [confirmation, setConfirmation] = useState("");
+  const [message, setMessage] = useState("");
+  const canReset = roles.includes("ceo") || roles.includes("administrator");
+
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      if (!canReset) {
+        throw new Error("Only the CEO or Administrator can reset test data.");
+      }
+      if (confirmation.trim() !== "RESET") {
+        throw new Error("Type RESET exactly to confirm.");
+      }
+
+      const { error } = await supabase.rpc("reset_test_data");
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      setConfirmation("");
+      setMessage("Test data has been reset. User accounts, roles, permissions, the farm profile and livestock types were preserved.");
+      await queryClient.invalidateQueries({});
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  if (!canReset) return null;
+
+  return (
+    <Panel>
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold">Reset Test Data</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Permanently remove test records from livestock, batches and movements,
+            sales, inventory, income and expenses, customers, suppliers, employees,
+            documents, notifications, secretary records, approvals, audit logs,
+            breeds and farm sections.
+          </p>
+          <p className="mt-2 text-sm font-medium">
+            This will not delete staff login accounts, assigned roles, permissions,
+            the official farm profile or livestock types. This action cannot be undone.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 max-w-xl space-y-3">
+        <label className="block space-y-1.5 text-sm">
+          <span className="font-medium">Type RESET to confirm</span>
+          <Input
+            value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+            placeholder="Type RESET"
+            autoComplete="off"
+            disabled={resetMutation.isPending}
+          />
+        </label>
+        {message && (
+          <p role="status" className="rounded-lg border p-3 text-sm">
+            {message}
+          </p>
+        )}
+        <Button
+          variant="destructive"
+          disabled={confirmation.trim() !== "RESET" || resetMutation.isPending}
+          onClick={() => {
+            setMessage("");
+            resetMutation.mutate();
+          }}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          {resetMutation.isPending ? "Resetting data..." : "Reset All Test Data"}
+        </Button>
+      </div>
+    </Panel>
+  );
+}
+
