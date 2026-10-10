@@ -52,6 +52,12 @@ export type Database = {
       }
       animal_batches: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          rejection_reason: string | null
+          submitted_by: string | null
+
           acquisition_cost: number | null
           batch_code: string
           breed_id: string | null
@@ -71,6 +77,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          submitted_by?: string | null
+
           acquisition_cost?: number | null
           batch_code: string
           breed_id?: string | null
@@ -90,6 +102,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          submitted_by?: string | null
+
           acquisition_cost?: number | null
           batch_code?: string
           breed_id?: string | null
@@ -134,6 +152,12 @@ export type Database = {
       }
       animals: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          rejection_reason: string | null
+          submitted_by: string | null
+
           acquired_on: string | null
           acquisition_cost: number | null
           breed_id: string | null
@@ -153,6 +177,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          submitted_by?: string | null
+
           acquired_on?: string | null
           acquisition_cost?: number | null
           breed_id?: string | null
@@ -172,6 +202,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          submitted_by?: string | null
+
           acquired_on?: string | null
           acquisition_cost?: number | null
           breed_id?: string | null
@@ -561,6 +597,13 @@ export type Database = {
       }
       inventory_items: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          rejection_reason: string | null
+          submitted_by: string | null
+          submitted_quantity: number
+
           category: string | null
           created_at: string
           id: string
@@ -573,6 +616,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          submitted_by?: string | null
+          submitted_quantity?: number
+
           category?: string | null
           created_at?: string
           id?: string
@@ -585,6 +635,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          submitted_by?: string | null
+          submitted_quantity?: number
+
           category?: string | null
           created_at?: string
           id?: string
