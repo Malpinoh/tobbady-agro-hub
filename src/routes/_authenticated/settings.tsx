@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -553,17 +553,192 @@ function SettingsPage() {
         </Panel>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <SettingsFeature
-            icon={Building2}
-            title="Business Profile"
-            description="Set up the farm's official name, contact details, address and business information."
-          />
+          <BusinessProfileSection />
 
           <SettingsFeature
             icon={KeyRound}
             title="Role Permissions"
             description="Review and manage which modules each staff role can access."
           />
+
+function BusinessProfileSection() {
+  const { can } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [form, setForm] = useState({
+    name: "",
+    location: "",
+    notes: "",
+  });
+  const [message, setMessage] = useState("");
+
+  const farmQuery = useQuery({
+    queryKey: ["settings", "business-profile"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("farms")
+        .select("id, name, location, notes")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (farmQuery.data) {
+      setForm({
+        name: farmQuery.data.name ?? "",
+        location: farmQuery.data.location ?? "",
+        notes: farmQuery.data.notes ?? "",
+      });
+    }
+  }, [farmQuery.data]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const farm = farmQuery.data;
+
+      if (!farm) {
+        throw new Error("No existing farm record was found.");
+      }
+
+      const name = form.name.trim();
+      const location = form.location.trim();
+      const notes = form.notes.trim();
+
+      if (!name) {
+        throw new Error("Enter the official farm name.");
+      }
+
+      const { error } = await supabase
+        .from("farms")
+        .update({
+          name,
+          location: location || null,
+          notes: notes || null,
+        })
+        .eq("id", farm.id);
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["settings", "business-profile"],
+      });
+      setMessage("Business profile saved successfully.");
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  return (
+    <Panel className="h-full">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+          <Building2 className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className="font-semibold">Business Profile</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage the farm's official name, location and business notes.
+          </p>
+        </div>
+      </div>
+
+      {farmQuery.isPending ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Loading business profile...
+        </p>
+      ) : farmQuery.isError ? (
+        <div className="mt-4 rounded-lg border p-3 text-sm">
+          <p>Could not load the business profile.</p>
+          <Button
+            className="mt-3"
+            size="sm"
+            variant="outline"
+            onClick={() => void farmQuery.refetch()}
+          >
+            Try again
+          </Button>
+        </div>
+      ) : !farmQuery.data ? (
+        <p className="mt-4 rounded-lg border p-3 text-sm text-muted-foreground">
+          No farm record was found. No new farm has been created.
+        </p>
+      ) : (
+        <form
+          className="mt-4 space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setMessage("");
+
+            if (can("farm.manage")) {
+              saveMutation.mutate();
+            }
+          }}
+        >
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium">Official farm name *</span>
+            <Input
+              required
+              disabled={!can("farm.manage")}
+              value={form.name}
+              onChange={(event) =>
+                setForm({ ...form, name: event.target.value })
+              }
+            />
+          </label>
+
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium">Farm location / address</span>
+            <Input
+              disabled={!can("farm.manage")}
+              placeholder="Enter the farm location"
+              value={form.location}
+              onChange={(event) =>
+                setForm({ ...form, location: event.target.value })
+              }
+            />
+          </label>
+
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium">Business notes / description</span>
+            <textarea
+              disabled={!can("farm.manage")}
+              className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+              placeholder="Add information about the farm"
+              value={form.notes}
+              onChange={(event) =>
+                setForm({ ...form, notes: event.target.value })
+              }
+            />
+          </label>
+
+          {!can("farm.manage") && (
+            <p className="text-xs text-muted-foreground">
+              You can view this profile, but only the CEO or Administrator
+              with farm management permission can edit it.
+            </p>
+          )}
+
+          {message && (
+            <p role="status" className="rounded-lg border p-3 text-sm">
+              {message}
+            </p>
+          )}
+
+          {can("farm.manage") && (
+            <Button type="submit" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? "Saving..." : "Save Business Profile"}
+            </Button>
+          )}
+        </form>
+      )}
+    </Panel>
+  );
+}
 
           <Panel className="h-full">
             <div className="flex items-start gap-3">
