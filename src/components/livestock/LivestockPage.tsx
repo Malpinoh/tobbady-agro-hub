@@ -69,6 +69,8 @@ import {
 } from "./types";
 
 
+import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
+
 type Tab = "overview" | "animals" | "batches";
 
 const NONE = "__none";
