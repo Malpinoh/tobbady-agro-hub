@@ -1096,30 +1096,3 @@ function BusinessProfileSection() {
     </Panel>
   );
 }
-
-function SettingsFeature({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof Building2;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Panel className="h-full">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold">{title}</h3>
-            <StatusBadge tone="warning">Coming later</StatusBadge>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-        </div>
-      </div>
-    </Panel>
-  );
-}
