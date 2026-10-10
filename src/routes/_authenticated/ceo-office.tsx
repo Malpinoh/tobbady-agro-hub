@@ -46,8 +46,8 @@ function CEOOffice() {
           "id, sale_date, total_amount, status"
         ),
         supabase.from("expenses").select(
-          "id, spent_on, amount, status"
-        ),
+        "id, spent_on, amount, status, payment_status"
+      ),
         supabase.from("income").select(
           "id, received_on, amount, status"
         ),
@@ -84,8 +84,11 @@ function CEOOffice() {
       );
 
       const validExpenses = expenses.filter(
-        (e) => e.status !== "cancelled" && e.status !== "rejected"
-      );
+  (e) =>
+    e.payment_status === "paid" &&
+    e.status !== "cancelled" &&
+    e.status !== "rejected"
+);
 
       const validIncome = income.filter(
         (i) => i.status !== "cancelled" && i.status !== "rejected"
