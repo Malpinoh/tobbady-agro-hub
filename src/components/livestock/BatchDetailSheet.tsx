@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   BadgeDollarSign,
   History,
+  Pencil,
   Skull,
   Trash2,
 } from "lucide-react";
@@ -55,12 +56,14 @@ const fmt = (date: string | null) =>
 export function BatchDetailSheet({
   batch,
   onClose,
+  onEdit,
   refData,
   lk,
   canManage,
 }: {
   batch: BatchWithMovements | null;
   onClose: () => void;
+  onEdit: (batch: BatchWithMovements) => void;
   refData: RefData;
   lk: Lookups;
   canManage: boolean;
@@ -101,7 +104,7 @@ export function BatchDetailSheet({
               </SheetHeader>
 
               {canManage && (
-                <div className="mt-4"><DeletionRequestButton recordType="batch" recordId={batch.id} label={batch.batch_code} original={batch} /></div>
+                <div className="mt-4 flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => onEdit(batch)}><Pencil className="mr-1.5 h-3.5 w-3.5" />Request edit</Button><DeletionRequestButton recordType="batch" recordId={batch.id} label={batch.batch_code} original={batch} /></div>
               )}
               {canManage && batch.current_quantity > 0 && (
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
