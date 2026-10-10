@@ -58,6 +58,7 @@ export function BatchFormDialog({
   const [errors, setErrors] = useState<
     Partial<Record<keyof typeof empty, string>>
   >({});
+  const [editReason, setEditReason] = useState("");
 
   const types = refData.types.filter(
     (t) =>
@@ -69,6 +70,7 @@ export function BatchFormDialog({
     if (!open) return;
 
     setErrors({});
+    setEditReason("");
 
     if (batch) {
       const section = refData.sections.find(
@@ -232,7 +234,7 @@ export function BatchFormDialog({
           </DialogTitle>
 
           <DialogDescription>
-            Create a batch for poultry or other livestock tracked by quantity. {batch ? "Changes will be sent to the CEO/Administrator for approval." : ""}
+            Create a batch for poultry or other livestock tracked by quantity. {batch ? "Edits are sent to the CEO/Administrator for approval." : ""} {batch ? "Changes will be sent to the CEO/Administrator for approval." : ""}
             Current quantity is automatically calculated from recorded
             movements.
           </DialogDescription>
@@ -253,6 +255,7 @@ export function BatchFormDialog({
             }}
           >
             {batch && <Field label="Reason for edit request" required className="sm:col-span-2"><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what is incorrect and why it needs changing (minimum 5 characters)" /></Field>}
+            {batch && <Field label="Reason for edit request" required><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what needs correcting and why (minimum 5 characters)" /></Field>}
             <Field
               label="Batch code"
               required
