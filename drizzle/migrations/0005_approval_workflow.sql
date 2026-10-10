@@ -179,3 +179,17 @@ $$;
 
 REVOKE ALL ON FUNCTION public.record_inventory_movement(uuid, text, numeric, numeric, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.record_inventory_movement(uuid, text, numeric, numeric, text, text) TO authenticated;
+
+-- Allow CEO/Administrator approval even when they do not hold the operational manage permission.
+DROP POLICY IF EXISTS "CEO admin approve animals" ON public.animals;
+CREATE POLICY "CEO admin approve animals" ON public.animals FOR UPDATE TO authenticated
+USING (approval_status = 'pending' AND (public.has_role(auth.uid(),'ceo'::public.app_role) OR public.has_role(auth.uid(),'administrator'::public.app_role)))
+WITH CHECK (public.has_role(auth.uid(),'ceo'::public.app_role) OR public.has_role(auth.uid(),'administrator'::public.app_role));
+DROP POLICY IF EXISTS "CEO admin approve batches" ON public.animal_batches;
+CREATE POLICY "CEO admin approve batches" ON public.animal_batches FOR UPDATE TO authenticated
+USING (approval_status = 'pending' AND (public.has_role(auth.uid(),'ceo'::public.app_role) OR public.has_role(auth.uid(),'administrator'::public.app_role)))
+WITH CHECK (public.has_role(auth.uid(),'ceo'::public.app_role) OR public.has_role(auth.uid(),'administrator'::public.app_role));
+DROP POLICY IF EXISTS "CEO admin approve inventory" ON public.inventory_items;
+CREATE POLICY "CEO admin approve inventory" ON public.inventory_items FOR UPDATE TO authenticated
+USING (approval_status = 'pending' AND (public.has_role(auth.uid(),'ceo'::public.app_role) OR public.has_role(auth.uid(),'administrator'::public.app_role)))
+WITH CHECK (public.has_role(auth.uid(),'ceo'::public.app_role) OR public.has_role(auth.uid(),'administrator'::public.app_role));
