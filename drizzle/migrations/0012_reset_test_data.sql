@@ -23,6 +23,8 @@ BEGIN
   DELETE FROM public.sales WHERE id IS NOT NULL;
   DELETE FROM public.inventory_transactions WHERE id IS NOT NULL;
   DELETE FROM public.inventory_items WHERE id IS NOT NULL;
+  -- Approvals reference expenses, so remove them before deleting expenses.
+  DELETE FROM public.executive_approvals WHERE id IS NOT NULL;
   DELETE FROM public.expenses WHERE id IS NOT NULL;
   DELETE FROM public.income WHERE id IS NOT NULL;
   DELETE FROM public.animals WHERE id IS NOT NULL;
