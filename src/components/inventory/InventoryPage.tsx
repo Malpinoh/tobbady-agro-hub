@@ -126,8 +126,9 @@ function InventoryContent() {
     },
   });
 
-  const items = itemsQuery.data ?? [];
+   const items = itemsQuery.data ?? [];
   const transactions = transactionsQuery.data ?? [];
+  const selectedItem = items.find((item) => item.id === selectedItemId);
 
   const lowStockItems = items.filter(
     (item) => item.quantity_on_hand <= item.reorder_level,
