@@ -185,9 +185,13 @@ function AnimalTable({
               </td>
 
               <td className="px-3 py-3">
-                <div>{lk.farmName(animal.farm_section_id)}</div>
+                <div>
+                  {lk.farmNameById(animal.farm_id) !== "—"
+                    ? lk.farmNameById(animal.farm_id)
+                    : lk.farmName(animal.farm_section_id)}
+                </div>
                 <div className="text-xs text-muted-foreground">
-                  {lk.sectionName(animal.farm_section_id)}
+                  {animal.location_description || lk.sectionName(animal.farm_section_id)}
                 </div>
               </td>
 
