@@ -555,38 +555,368 @@ function SettingsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <BusinessProfileSection />
 
-          <SettingsFeature
-            icon={KeyRound}
-            title="Role Permissions"
-            description="Review and manage which modules each staff role can access."
-          />
+          <RolePermissionsSection />
 
-          <Panel className="h-full">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                <UserRound className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">Profile Management</h3>
-                  <StatusBadge tone="warning">Coming later</StatusBadge>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Update your display name and personal account details.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-              System roles:{" "}
-              {ALL_ROLES.map((role) => ROLE_LABELS[role]).join(", ")}.
-            </div>
-          </Panel>
+          <ProfileManagementSection />
         </div>
       </div>
     </RequirePermission>
   );
 }
 
+
+
+function RolePermissionsSection() {
+  const { user, roles, can, hasRole, refresh } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedRole, setSelectedRole] = useState<import("@/lib/access").AppRole>("farm_worker");
+  const [message, setMessage] = useState("");
+  const canManagePermissions =
+    can("settings.manage") && (hasRole("ceo") || hasRole("administrator"));
+  const editableRoles = ALL_ROLES.filter((role) => !roles.includes(role));
+
+  useEffect(() => {
+    if (editableRoles.length && !editableRoles.includes(selectedRole)) {
+      setSelectedRole(editableRoles[0]);
+    }
+  }, [editableRoles.join("|"), selectedRole]);
+
+  const permissionsQuery = useQuery({
+    queryKey: ["settings", "permissions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("permissions")
+        .select("key, module, description")
+        .order("module")
+        .order("key");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const rolePermissionsQuery = useQuery({
+    queryKey: ["settings", "role-permissions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("role_permissions")
+        .select("role, permission_key");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const permissionMutation = useMutation({
+    mutationFn: async ({
+      role,
+      permissionKey,
+      enabled,
+    }: {
+      role: import("@/lib/access").AppRole;
+      permissionKey: string;
+      enabled: boolean;
+    }) => {
+      if (!canManagePermissions) {
+        throw new Error("Only the CEO or an authorised administrator with settings management permission can change role permissions.");
+      }
+      if (role === "ceo" || roles.includes(role)) {
+        throw new Error("For safety, you cannot change the CEO role or a role assigned to your own account here.");
+      }
+      if (enabled) {
+        const { error } = await supabase.from("role_permissions").insert({
+          role,
+          permission_key: permissionKey,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("role_permissions")
+          .delete()
+          .eq("role", role)
+          .eq("permission_key", permissionKey);
+        if (error) throw error;
+      }
+    },
+    onSuccess: async () => {
+      setMessage("Role permissions saved.");
+      await queryClient.invalidateQueries({ queryKey: ["settings", "role-permissions"] });
+      await queryClient.invalidateQueries({ queryKey: ["staff-role-permissions"] });
+      await refresh();
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  const permissions = permissionsQuery.data ?? [];
+  const rolePermissions = rolePermissionsQuery.data ?? [];
+  const modules = [...new Set(permissions.map((permission) => permission.module))];
+  const isLoading = permissionsQuery.isLoading || rolePermissionsQuery.isLoading;
+  const queryError = permissionsQuery.error || rolePermissionsQuery.error;
+
+  return (
+    <Panel className="h-full">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+          <KeyRound className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold">Role Permissions</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Choose which application modules each staff role can access.
+          </p>
+        </div>
+      </div>
+
+      {!canManagePermissions && (
+        <p className="mt-4 rounded-lg border p-3 text-sm text-muted-foreground">
+          You can view permissions, but only the CEO or an authorised Administrator with settings management permission can change them.
+        </p>
+      )}
+
+      <label className="mt-4 block space-y-1.5 text-sm">
+        <span className="font-medium">Staff role</span>
+        <select
+          className="h-10 w-full rounded-md border bg-background px-3"
+          value={selectedRole}
+          onChange={(event) => setSelectedRole(event.target.value as import("@/lib/access").AppRole)}
+        >
+          {ALL_ROLES.map((role) => (
+            <option key={role} value={role} disabled={role === "ceo" || roles.includes(role)}>
+              {ROLE_LABELS[role]}{role === "ceo" ? " (protected)" : roles.includes(role) ? " (your role)" : ""}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {message && (
+        <p role="status" className="mt-3 rounded-lg border p-3 text-sm">{message}</p>
+      )}
+
+      {isLoading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Loading permissions...</p>
+      ) : queryError ? (
+        <div className="mt-4 rounded-lg border p-3 text-sm">
+          <p>Could not load role permissions.</p>
+          <p className="mt-1 text-muted-foreground">{friendlyError(queryError)}</p>
+          <Button className="mt-3" size="sm" variant="outline" onClick={() => {
+            void permissionsQuery.refetch();
+            void rolePermissionsQuery.refetch();
+          }}>Try again</Button>
+        </div>
+      ) : permissions.length === 0 ? (
+        <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          No permission definitions were found in the database.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-4">
+          {modules.map((module) => (
+            <div key={module} className="rounded-lg border p-3">
+              <h4 className="mb-2 font-medium capitalize">{module.replace(/[_-]/g, " ")}</h4>
+              <div className="space-y-3">
+                {permissions.filter((permission) => permission.module === module).map((permission) => {
+                  const enabled = rolePermissions.some((item) => item.role === selectedRole && item.permission_key === permission.key);
+                  const protectedRole = selectedRole === "ceo" || roles.includes(selectedRole);
+                  return (
+                    <label key={permission.key} className="flex items-start gap-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={enabled}
+                        disabled={!canManagePermissions || protectedRole || permissionMutation.isPending}
+                        onChange={(event) => {
+                          setMessage("");
+                          permissionMutation.mutate({
+                            role: selectedRole,
+                            permissionKey: permission.key,
+                            enabled: event.target.checked,
+                          });
+                        }}
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-medium">{permission.key}</span>
+                        {permission.description && <span className="block text-xs text-muted-foreground">{permission.description}</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            The CEO role and roles assigned to your own account are protected against accidental lockout. Database access policies must also authorise permission changes.
+          </p>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function ProfileManagementSection() {
+  const { user, refresh } = useAuth();
+  const queryClient = useQueryClient();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const profileQuery = useQuery({
+    queryKey: ["settings", "my-profile", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone")
+        .eq("id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (profileQuery.data) {
+      setFullName(profileQuery.data.full_name ?? "");
+      setPhone(profileQuery.data.phone ?? "");
+      setEmail(user?.email ?? profileQuery.data.email ?? "");
+    }
+  }, [profileQuery.data, user?.email]);
+
+  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    if (!user) {
+      setMessage("You must be signed in to update your profile.");
+      return;
+    }
+    if (!fullName.trim()) {
+      setMessage("Enter your display name.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: fullName.trim(), phone: phone.trim() || null })
+        .eq("id", user.id);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["settings", "my-profile", user.id] });
+      await refresh();
+      setMessage("Your profile details were saved.");
+    } catch (error) {
+      setMessage(friendlyError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestEmailChange(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setEmailMessage("");
+    if (!email.trim() || email.trim().toLowerCase() === (user?.email ?? "").toLowerCase()) {
+      setEmailMessage("Enter a new email address different from your current one.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: email.trim() });
+      if (error) throw error;
+      setEmailMessage("Email change requested. Check your inbox and follow the confirmation instructions before the new address takes effect.");
+    } catch (error) {
+      setEmailMessage(friendlyError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changePassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordMessage("");
+    if (password.length < 8) {
+      setPasswordMessage("Use a password with at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setPasswordMessage("The passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setPassword("");
+      setConfirmPassword("");
+      setPasswordMessage("Password updated successfully.");
+    } catch (error) {
+      setPasswordMessage(friendlyError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Panel className="h-full">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+          <UserRound className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold">Profile Management</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Update your display name, phone number, email address and password.
+          </p>
+        </div>
+      </div>
+
+      {profileQuery.isLoading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Loading your profile...</p>
+      ) : profileQuery.isError ? (
+        <div className="mt-4 rounded-lg border p-3 text-sm">
+          <p>Could not load your profile.</p>
+          <p className="mt-1 text-muted-foreground">{friendlyError(profileQuery.error)}</p>
+          <Button className="mt-3" size="sm" variant="outline" onClick={() => void profileQuery.refetch()}>Try again</Button>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-5">
+          <form className="space-y-3" onSubmit={saveProfile}>
+            <label className="block space-y-1.5 text-sm">
+              <span className="font-medium">Display name *</span>
+              <Input required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} />
+            </label>
+            <label className="block space-y-1.5 text-sm">
+              <span className="font-medium">Phone number</span>
+              <Input maxLength={30} value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Your phone number" />
+            </label>
+            {message && <p role="status" className="rounded-lg border p-3 text-sm">{message}</p>}
+            <Button type="submit" disabled={busy}>{busy ? "Saving..." : "Save Profile"}</Button>
+          </form>
+
+          <div className="border-t pt-4">
+            <h4 className="font-medium">Email address</h4>
+            <p className="mt-1 text-xs text-muted-foreground">Supabase may require email confirmation before changing your sign-in address.</p>
+            <form className="mt-3 space-y-3" onSubmit={requestEmailChange}>
+              <Input type="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} />
+              {emailMessage && <p role="status" className="rounded-lg border p-3 text-sm">{emailMessage}</p>}
+              <Button type="submit" variant="outline" disabled={busy}>{busy ? "Please wait..." : "Request Email Change"}</Button>
+            </form>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="font-medium">Change password</h4>
+            <form className="mt-3 space-y-3" onSubmit={changePassword}>
+              <Input type="password" required minLength={8} autoComplete="new-password" placeholder="New password (at least 8 characters)" value={password} onChange={(event) => setPassword(event.target.value)} />
+              <Input type="password" required minLength={8} autoComplete="new-password" placeholder="Confirm new password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+              {passwordMessage && <p role="status" className="rounded-lg border p-3 text-sm">{passwordMessage}</p>}
+              <Button type="submit" variant="outline" disabled={busy}>{busy ? "Please wait..." : "Update Password"}</Button>
+            </form>
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
 
 function BusinessProfileSection() {
   const { can } = useAuth();
