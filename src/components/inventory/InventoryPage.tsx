@@ -80,7 +80,7 @@ const categories = [
 ];
 
 function InventoryContent() {
-  const { user, can } = useAuth();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const canManage = can("inventory.manage");
 
@@ -330,48 +330,22 @@ function InventoryContent() {
 
     try {
       // Update the stock quantity first.
-      const updateData: {
-        quantity_on_hand: number;
-        updated_at: string;
-        unit_cost?: number;
-      } = {
-        quantity_on_hand: newQuantity,
-        updated_at: new Date().toISOString(),
-      };
+      
+      // Update stock and record its history in one database transaction.
+      const { error } = await supabase.rpc("record_inventory_movement", {
+        p_item_id: item.id,
+        p_transaction_type: transactionType,
+        p_quantity: transactionQuantity,
+        p_unit_cost: enteredCost,
+        p_reference: movementReference.trim() || null,
+        p_notes:
+          movementType === "count"
+            ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()
+            : movementNotes.trim() || null,
+      });
 
-      if (movementType === "received" && enteredCost !== null) {
-        updateData.unit_cost = enteredCost;
-      }
+      if (error) throw error;
 
-      const { error: updateError } = await supabase
-        .from("inventory_items")
-        .update(updateData)
-        .eq("id", item.id);
-
-      if (updateError) throw updateError;
-
-      // Record the movement in the audit history.
-      const { error: transactionError } = await supabase
-        .from("inventory_transactions")
-        .insert({
-          item_id: item.id,
-          quantity: transactionQuantity,
-          transaction_type: transactionType,
-          occurred_at: new Date().toISOString(),
-          performed_by: user?.id ?? null,
-          unit_cost: enteredCost,
-          reference: movementReference.trim() || null,
-          notes:
-            movementType === "count"
-              ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()
-              : movementNotes.trim() || null,
-        });
-
-      if (transactionError) {
-        throw new Error(
-          `Stock quantity was updated, but the movement history could not be saved. Refresh and contact an administrator before retrying. Details: ${transactionError.message}`,
-        );
-      }
 
       setMovementDialog(false);
       await Promise.all([
@@ -386,7 +360,7 @@ function InventoryContent() {
     }
   }
 
-  const selectedItem = items.find((item) => item.id === selectedItemId);
+     async function saveMovement() {     if (!canManage) {       alert("You do not have permission to manage inventory.");       return;     }      const item = items.find((entry) => entry.id === selectedItemId);      if (!item) {       alert("Select an inventory item.");       return;     }      const enteredQuantity = Number(movementQuantity);     const enteredCount = Number(actualCount);      if (movementType === "count") {       if (         actualCount.trim() === "" ||         !Number.isFinite(enteredCount) ||         enteredCount < 0       ) {         alert("Enter a valid physical stock count.");         return;       }     } else {       if (         !movementQuantity.trim() ||         !Number.isFinite(enteredQuantity) ||         enteredQuantity <= 0       ) {         alert("Enter a quantity greater than zero.");         return;       }     }      const newQuantity =       movementType === "received"         ? item.quantity_on_hand + enteredQuantity         : movementType === "used"           ? item.quantity_on_hand - enteredQuantity           : enteredCount;      if (newQuantity < 0) {       alert("There is not enough stock for this usage.");       return;     }      const difference = newQuantity - item.quantity_on_hand;      if (movementType === "count" && difference === 0) {       alert(         "The physical count matches the recorded stock. No adjustment is needed.",       );       return;     }      const transactionType =       movementType === "count"         ? difference > 0           ? "count_increase"           : "count_decrease"         : movementType;      const transactionQuantity =       movementType === "count" ? Math.abs(difference) : enteredQuantity;      const enteredCost =       movementCost.trim() === "" ? null : Number(movementCost);      if (       enteredCost !== null &&       (!Number.isFinite(enteredCost) || enteredCost < 0)     ) {       alert("Enter a valid unit cost.");       return;     }      setSaving(true);      try {       // Update stock and record its history in one database transaction.       const { error } = await supabase.rpc("record_inventory_movement", {         p_item_id: item.id,         p_transaction_type: transactionType,         p_quantity: transactionQuantity,         p_unit_cost: enteredCost,         p_reference: movementReference.trim() || null,         p_notes:           movementType === "count"             ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()             : movementNotes.trim() || null,       });        if (error) {         throw error;       }        setMovementDialog(false);        await Promise.all([         queryClient.invalidateQueries({           queryKey: ["inventory-items"],         }),         queryClient.invalidateQueries({           queryKey: ["inventory-transactions"],         }),       ]);     } catch (error) {       alert(         error instanceof Error           ? error.message           : "Could not record stock movement.",       );        await Promise.all([         queryClient.invalidateQueries({           queryKey: ["inventory-items"],         }),         queryClient.invalidateQueries({           queryKey: ["inventory-transactions"],         }),       ]);     } finally {       setSaving(false);     }   }
 
   return (
     <div className="space-y-6">

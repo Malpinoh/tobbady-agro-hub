@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, RefreshCw, Building2 } from "lucide-react";
 import {
   PageHeader,
@@ -158,6 +158,108 @@ function CEOOffice() {
   });
 
   const data = query.data;
+  
+  const approvalsQuery = useQuery({
+    queryKey: ["ceo-executive-approvals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("executive_approvals")
+        .select(
+          "id, title, request_details, amount, status, requested_by, decision_notes, created_at"
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const approvals = approvalsQuery.data ?? [];
+  const pendingApprovals = approvals.filter(
+    (approval) => approval.status === "pending"
+  );
+  
+  const targetsQuery = useQuery({
+    queryKey: ["ceo-business-targets"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_targets")
+        .select(
+          "id, title, metric, target_value, period_start, period_end, notes"
+        )
+        .order("period_start", { ascending: false });
+
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const targetMutation = useMutation({
+    mutationFn: async (target: {
+      title: string;
+      metric: string;
+      target_value: number;
+      period_start: string;
+      period_end: string;
+      notes: string | null;
+    }) => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
+      if (!user) throw new Error("Please sign in first.");
+
+      const { error } = await supabase
+        .from("business_targets")
+        .insert({ ...target, created_by: user.id });
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["ceo-business-targets"],
+      });
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const decisionMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "approved" | "rejected";
+    }) => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
+      if (!user) throw new Error("Please sign in first.");
+
+      const { error } = await supabase
+        .from("executive_approvals")
+        .update({
+          status,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("status", "pending");
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["ceo-executive-approvals"],
+      });
+    },
+  });
 
   const stats = [
     {
@@ -306,61 +408,119 @@ function CEOOffice() {
             </Panel>
           </div>
           
-          <Panel title="Executive Approvals" className="mt-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-semibold">
-                  Executive decision centre
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Review business requests and record executive decisions.
-                </p>
-              </div>
-              <StatusBadge tone="warning">
-                Database setup required
-              </StatusBadge>
-            </div>
+          
+<Panel title="Executive Approvals" className="mt-6">
+  <div className="mb-4">
+    <h3 className="font-semibold">Executive decision centre</h3>
+    <p className="mt-1 text-sm text-muted-foreground">
+      Review requests and record executive decisions.
+    </p>
+  </div>
 
-            <div className="rounded-xl border border-dashed p-6 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <span className="text-xl">✓</span>
-              </div>
-
-              <h3 className="font-semibold">
-                Approval records are not connected yet
-              </h3>
-
-              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-                Once the approval database is configured, this section
-                will show pending requests, approval history, request
-                details, amounts, and the person responsible for each
-                decision.
-              </p>
-
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
-                >
-                  Approve request
-                </button>
-
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
-                >
-                  Reject request
-                </button>
-              </div>
-
-              <p className="mt-3 text-xs text-muted-foreground">
-                Decisions are disabled until secure database storage
-                and permissions are configured.
+  {approvalsQuery.isLoading ? (
+    <p className="text-sm text-muted-foreground">
+      Loading approval requests...
+    </p>
+  ) : approvalsQuery.isError ? (
+    <div className="rounded-lg border p-4">
+      <p className="text-sm text-destructive">
+        Could not load approval requests.
+      </p>
+      <button
+        type="button"
+        onClick={() => void approvalsQuery.refetch()}
+        className="mt-2 rounded-lg border px-3 py-2 text-sm"
+      >
+        Try again
+      </button>
+    </div>
+  ) : approvals.length === 0 ? (
+    <div className="rounded-xl border border-dashed p-6 text-center">
+      <h4 className="font-semibold">No approval requests yet</h4>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Requests submitted by staff will appear here when they are
+        available to your account.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {approvals.map((approval) => (
+        <div key={approval.id} className="rounded-xl border p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="font-semibold">{approval.title}</h4>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Submitted{" "}
+                {new Date(approval.created_at).toLocaleString()}
               </p>
             </div>
-          </Panel>
+            <span className="rounded-full border px-3 py-1 text-xs font-medium capitalize">
+              {approval.status}
+            </span>
+          </div>
+
+          {approval.request_details && (
+            <p className="mt-3 whitespace-pre-wrap text-sm">
+              {approval.request_details}
+            </p>
+          )}
+
+          {approval.amount != null && (
+            <p className="mt-2 text-sm font-semibold">
+              Amount: {money(amount(approval.amount))}
+            </p>
+          )}
+
+          {approval.decision_notes && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Decision notes: {approval.decision_notes}
+            </p>
+          )}
+
+          {approval.status === "pending" && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={decisionMutation.isPending}
+                onClick={() =>
+                  decisionMutation.mutate({
+                    id: approval.id,
+                    status: "approved",
+                  })
+                }
+                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                Approve
+              </button>
+
+              <button
+                type="button"
+                disabled={decisionMutation.isPending}
+                onClick={() =>
+                  decisionMutation.mutate({
+                    id: approval.id,
+                    status: "rejected",
+                  })
+                }
+                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+
+  {decisionMutation.isError && (
+    <p className="mt-4 text-sm text-destructive">
+      The decision could not be saved. Check your permissions and try
+      again.
+    </p>
+  )}
+</Panel>
+
           
           <Panel title="Strategic Reports" className="mt-6">
             <div className="mb-4">
@@ -448,123 +608,201 @@ function CEOOffice() {
             </div>
           </Panel>
           
-          <Panel title="Business Targets" className="mt-6">
-            <div className="mb-4">
-              <h3 className="font-semibold">
-                Strategic performance targets
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Track management goals for livestock, revenue, sales,
-                and cost control.
-              </p>
+          
+<Panel title="Business Targets" className="mt-6">
+  <div className="mb-4">
+    <h3 className="font-semibold">Strategic performance targets</h3>
+    <p className="mt-1 text-sm text-muted-foreground">
+      Save management goals and review them against actual farm performance.
+    </p>
+  </div>
+
+  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    {[
+      {
+        title: "Livestock population",
+        value: data?.livestockCount.toLocaleString() ?? "—",
+      },
+      {
+        title: "Monthly sales",
+        value: data ? money(data.monthlySales) : "—",
+      },
+      {
+        title: "Monthly income",
+        value: data ? money(data.monthlySales + data.monthlyIncome) : "—",
+      },
+      {
+        title: "Monthly expenses",
+        value: data ? money(data.monthlyExpenses) : "—",
+      },
+    ].map((item) => (
+      <div key={item.title} className="rounded-lg border p-4">
+        <p className="text-sm font-medium">{item.title}</p>
+        <p className="mt-2 text-xl font-bold">{item.value}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Current position
+        </p>
+      </div>
+    ))}
+  </div>
+
+  <div className="mt-5 rounded-xl border p-5">
+    <h4 className="font-semibold">Configure a business target</h4>
+
+    <form
+      className="mt-4 grid gap-4 sm:grid-cols-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+
+        targetMutation.mutate(
+          {
+            title: String(formData.get("title") ?? "").trim(),
+            metric: String(formData.get("metric") ?? ""),
+            target_value: Number(formData.get("target_value")),
+            period_start: String(formData.get("period_start") ?? ""),
+            period_end: String(formData.get("period_end") ?? ""),
+            notes: String(formData.get("notes") ?? "").trim() || null,
+          },
+          {
+            onSuccess: () => form.reset(),
+          }
+        );
+      }}
+    >
+      <label className="text-sm">
+        Target name
+        <input
+          name="title"
+          required
+          maxLength={120}
+          placeholder="e.g. October sales target"
+          className="mt-1 w-full rounded-lg border bg-background px-3 py-2"
+        />
+      </label>
+
+      <label className="text-sm">
+        Metric
+        <select
+          name="metric"
+          required
+          className="mt-1 w-full rounded-lg border bg-background px-3 py-2"
+          defaultValue="monthly_sales"
+        >
+          <option value="livestock_population">Livestock population</option>
+          <option value="monthly_sales">Monthly sales</option>
+          <option value="monthly_income">Monthly income</option>
+          <option value="monthly_expenses">Monthly expenses budget</option>
+        </select>
+      </label>
+
+      <label className="text-sm">
+        Target value
+        <input
+          name="target_value"
+          type="number"
+          min="0"
+          step="0.01"
+          required
+          className="mt-1 w-full rounded-lg border bg-background px-3 py-2"
+        />
+      </label>
+
+      <label className="text-sm">
+        Period starts
+        <input
+          name="period_start"
+          type="date"
+          required
+          className="mt-1 w-full rounded-lg border bg-background px-3 py-2"
+        />
+      </label>
+
+      <label className="text-sm">
+        Period ends
+        <input
+          name="period_end"
+          type="date"
+          required
+          className="mt-1 w-full rounded-lg border bg-background px-3 py-2"
+        />
+      </label>
+
+      <label className="text-sm">
+        Notes (optional)
+        <input
+          name="notes"
+          maxLength={500}
+          placeholder="Additional details"
+          className="mt-1 w-full rounded-lg border bg-background px-3 py-2"
+        />
+      </label>
+
+      <div className="sm:col-span-2">
+        <button
+          type="submit"
+          disabled={targetMutation.isPending}
+          className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+        >
+          {targetMutation.isPending ? "Saving..." : "Save target"}
+        </button>
+      </div>
+    </form>
+
+    {targetMutation.isError && (
+      <p className="mt-3 text-sm text-destructive">
+        Could not save the target. Check your account permissions and ensure
+        the end date is not before the start date.
+      </p>
+    )}
+
+    {targetMutation.isSuccess && (
+      <p className="mt-3 text-sm">
+        Target saved successfully.
+      </p>
+    )}
+  </div>
+
+  <div className="mt-6">
+    <h4 className="font-semibold">Saved targets</h4>
+
+    {targetsQuery.isLoading ? (
+      <p className="mt-3 text-sm text-muted-foreground">Loading targets...</p>
+    ) : targetsQuery.isError ? (
+      <p className="mt-3 text-sm text-destructive">
+        Could not load saved targets. Check your database permissions.
+      </p>
+    ) : targetsQuery.data.length === 0 ? (
+      <p className="mt-3 text-sm text-muted-foreground">
+        No targets saved yet. Use the form above to add your first target.
+      </p>
+    ) : (
+      <div className="mt-3 space-y-3">
+        {targetsQuery.data.map((target) => (
+          <div key={target.id} className="rounded-lg border p-4">
+            <div className="flex flex-wrap justify-between gap-2">
+              <h5 className="font-medium">{target.title}</h5>
+              <span className="text-sm font-semibold">
+                {target.metric === "livestock_population"
+                  ? Number(target.target_value).toLocaleString()
+                  : money(Number(target.target_value))}
+              </span>
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {target.metric.replaceAll("_", " ")} · {target.period_start} to{" "}
+              {target.period_end}
+            </p>
+            {target.notes && (
+              <p className="mt-2 text-sm">{target.notes}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</Panel>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium">
-                  Livestock population
-                </p>
-                <p className="mt-2 text-xl font-bold">
-                  {data ? data.livestockCount.toLocaleString() : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Current position
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Target: Not configured
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium">
-                  Monthly sales
-                </p>
-                <p className="mt-2 text-xl font-bold">
-                  {data ? money(data.monthlySales) : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Current month
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Target: Not configured
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium">
-                  Monthly income
-                </p>
-                <p className="mt-2 text-xl font-bold">
-                  {data ? money(data.monthlySales + data.monthlyIncome) : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Sales plus other income
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Target: Not configured
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium">
-                  Monthly expenses
-                </p>
-                <p className="mt-2 text-xl font-bold">
-                  {data ? money(data.monthlyExpenses) : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Current month
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Budget: Not configured
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-lg border border-dashed p-5">
-              <h4 className="font-semibold">
-                Configure business goals
-              </h4>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Set measurable goals, assign a reporting period, and
-                monitor progress against actual farm performance.
-                Targets cannot be saved until the database is connected.
-              </p>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-sm font-medium">Livestock growth</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Define a population goal for a selected period.
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-sm font-medium">Revenue growth</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Set a monthly sales and income target.
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-sm font-medium">Cost management</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Establish an expense budget and monitor overspending.
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-sm font-medium">Performance review</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Compare actual results with approved targets.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <StatusBadge tone="warning">
-                  Target storage not connected
-                </StatusBadge>
-              </div>
-            </div>
-          </Panel>
           
           <Panel title="Board Documents" className="mt-6">
             <div className="mb-4">
