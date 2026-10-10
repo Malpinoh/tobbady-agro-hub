@@ -154,7 +154,6 @@ function AnimalTable({
             <th className="px-3 py-3 font-medium">Location</th>
             <th className="px-3 py-3 font-medium">Value</th>
             <th className="px-3 py-3 font-medium">Status</th>
-            <th className="px-3 py-3 font-medium">Actions</th>
           </tr>
         </thead>
 
@@ -257,6 +256,7 @@ function BatchTable({
             <th className="px-3 py-3 font-medium">Sold</th>
             <th className="px-3 py-3 font-medium">Location</th>
             <th className="px-3 py-3 font-medium">Status</th>
+            <th className="px-3 py-3 font-medium">Actions</th>
           </tr>
         </thead>
 
