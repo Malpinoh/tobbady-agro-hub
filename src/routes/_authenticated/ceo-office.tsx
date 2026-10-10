@@ -504,25 +504,24 @@ function CEOOffice() {
           </div>
 
           -sm font-semibold">
-              Amount: {money(amount{approval.request_details && (
+                        {approval.request_details && (
             <p className="mt-3 whitespace-pre-wrap text-sm">
               {approval.request_details}
             </p>
           )}
 
-          
-{approval.amount != null && (
-  <p className="mt-2 text-sm font-semibold">
-    Amount: {money(amount(approval.amount))}
-  </p>
-)}
+          {approval.amount != null && (
+            <p className="mt-2 text-sm font-semibold">
+              Amount: {money(amount(approval.amount))}
+            </p>
+          )}
 
           {approval.decision_notes && (
             <p className="mt-2 text-sm text-muted-foreground">
               Decision notes: {approval.decision_notes}
             </p>
           )}
-
+          
           {approval.status === "pending" && (
             <div className="mt-4 flex flex-wrap gap-2">
               <button
