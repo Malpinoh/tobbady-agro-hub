@@ -561,6 +561,33 @@ function SettingsPage() {
             description="Review and manage which modules each staff role can access."
           />
 
+          <Panel className="h-full">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                <UserRound className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">Profile Management</h3>
+                  <StatusBadge tone="warning">Coming later</StatusBadge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Update your display name and personal account details.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+              System roles:{" "}
+              {ALL_ROLES.map((role) => ROLE_LABELS[role]).join(", ")}.
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </RequirePermission>
+  );
+}
+
+
 function BusinessProfileSection() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -737,32 +764,6 @@ function BusinessProfileSection() {
         </form>
       )}
     </Panel>
-  );
-}
-
-          <Panel className="h-full">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                <UserRound className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">Profile Management</h3>
-                  <StatusBadge tone="warning">Coming later</StatusBadge>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Update your display name and personal account details.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-              System roles:{" "}
-              {ALL_ROLES.map((role) => ROLE_LABELS[role]).join(", ")}.
-            </div>
-          </Panel>
-        </div>
-      </div>
-    </RequirePermission>
   );
 }
 
