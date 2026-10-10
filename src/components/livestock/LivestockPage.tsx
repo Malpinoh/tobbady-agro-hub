@@ -7,6 +7,7 @@ import {
   DollarSign,
   Filter,
   PawPrint,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -153,6 +154,7 @@ function AnimalTable({
             <th className="px-3 py-3 font-medium">Location</th>
             <th className="px-3 py-3 font-medium">Value</th>
             <th className="px-3 py-3 font-medium">Status</th>
+            <th className="px-3 py-3 font-medium">Actions</th>
           </tr>
         </thead>
 
@@ -218,11 +220,13 @@ function BatchTable({
   batches,
   lk,
   onSelect,
+  onEdit,
   onAdd,
 }: {
   batches: BatchWithMovements[];
   lk: ReturnType<typeof makeLookups>;
   onSelect: (batch: BatchWithMovements) => void;
+  onEdit: (batch: BatchWithMovements) => void;
   onAdd: () => void;
 }) {
   if (!batches.length) {
@@ -312,6 +316,20 @@ function BatchTable({
                   <StatusBadge tone={statusTone(batch.status)}>
                     {titleCase(batch.status)}
                   </StatusBadge>
+                </td>
+                <td className="px-3 py-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit(batch);
+                    }}
+                  >
+                    <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                    Request edit
+                  </Button>
                 </td>
               </tr>
             );
@@ -833,6 +851,11 @@ export default function LivestockPage() {
         batches={batches.data ?? []}
         lk={lk}
         onSelect={(batch) => setSelectedBatchId(batch.id)}
+        onEdit={(batch) => {
+          setSelectedBatchId(null);
+          setEditingBatch(batch);
+          setBatchDialogOpen(true);
+        }}
         onAdd={() => {
           setEditingBatch(null);
           setBatchDialogOpen(true);
