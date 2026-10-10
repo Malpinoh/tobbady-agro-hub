@@ -9,6 +9,7 @@ import {
 } from "@/components/app/PageKit";
 import { formatNaira } from "@/lib/access";
 import { supabase } from "@/integrations/supabase/client";
+import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -243,6 +244,8 @@ function Dashboard() {
         title="Business Dashboard"
         description="TOBADDY AGRO LIVESTOCK at a glance."
       />
+
+      <PendingApprovalsPanel />
 
       {dashboardQuery.isPending ? (
         <div className="rounded-xl border p-6 text-sm text-muted-foreground">
