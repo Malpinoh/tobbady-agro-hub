@@ -503,7 +503,7 @@ function CEOOffice() {
             </span>
           </div>
 
-          -sm font-semibold">
+
                         {approval.request_details && (
             <p className="mt-3 whitespace-pre-wrap text-sm">
               {approval.request_details}
