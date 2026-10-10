@@ -7,6 +7,7 @@ import {
   BadgeDollarSign,
   History,
   Skull,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -99,6 +100,9 @@ export function BatchDetailSheet({
                 </SheetDescription>
               </SheetHeader>
 
+              {canManage && (
+                <div className="mt-4"><DeletionRequestButton recordType="batch" recordId={batch.id} label={batch.batch_code} original={batch} /></div>
+              )}
               {canManage && batch.current_quantity > 0 && (
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Button
@@ -531,5 +535,25 @@ function Section({
       </div>
     </section>
   );
+}
+
+
+
+function DeletionRequestButton({ recordType, recordId, label, original }: { recordType: "animal" | "batch"; recordId: string; label: string; original: unknown }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
+  async function submit() {
+    if (reason.trim().length < 5) { toast.error("Please explain the reason (at least 5 characters)."); return; }
+    setSaving(true);
+    const { error } = await (supabase as any).from("record_change_requests").insert({ record_type: recordType, record_id: recordId, request_type: "delete", record_label: label, reason: reason.trim(), original_values: original });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deletion request sent to CEO/Administrator");
+    setOpen(false); setReason("");
+    void qc.invalidateQueries({ queryKey: ["record-approvals-pending"] });
+  }
+  return <><Button variant="destructive" size="sm" onClick={() => setOpen(true)}><Trash2 className="mr-1.5 h-3.5 w-3.5" />Request deletion</Button><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Request deletion — {label}</DialogTitle><DialogDescription>The record will remain unchanged until the CEO/Administrator approves. Explain why it should be deleted.</DialogDescription></DialogHeader><Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Duplicate entry or wrong livestock batch details (minimum 5 characters)" /><DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button variant="destructive" disabled={saving || reason.trim().length < 5} onClick={() => void submit()}>{saving ? "Submitting…" : "Submit deletion request"}</Button></DialogFooter></DialogContent></Dialog></>;
 }
 
