@@ -279,7 +279,23 @@ function BatchTable({
                 onClick={() => onSelect(batch)}
               >
                 <td className="px-3 py-3 font-semibold">
-                  {batch.batch_code}
+                  <div className="flex items-center gap-2">
+                    <span>{batch.batch_code}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      aria-label={`Request edit for ${batch.batch_code}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEdit(batch);
+                      }}
+                    >
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                  </div>
                 </td>
 
                 <td className="px-3 py-3">
