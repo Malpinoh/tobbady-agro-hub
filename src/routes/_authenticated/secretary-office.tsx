@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ClipboardList, FileText, Users, RefreshCw, Plus, CheckCircle2 } from "lucide-react";
+import { CalendarDays, Mail, Users, RefreshCw, Plus, CheckCircle2, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -105,7 +105,7 @@ function SecretaryOffice() {
     }
   }
 
-  async function addMeeting(event: React.FormEvent<HTMLFormElement>) {
+  async function addMeeting(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user || !canManage) return;
     await finishWrite(async () => {
@@ -213,7 +213,7 @@ function SecretaryOffice() {
 
         <div className="flex flex-wrap gap-2 border-b pb-3">
           <Button variant={tab === "meetings" ? "default" : "outline"} onClick={() => setTab("meetings")}><CalendarDays className="mr-2 h-4 w-4" />Meetings & Schedules</Button>
-          <Button variant={tab === "correspondence" ? "default" : "outline"} onClick={() => setTab("correspondence")}><MailIcon className="mr-2 h-4 w-4" />Correspondence</Button>
+          <Button variant={tab === "correspondence" ? "default" : "outline"} onClick={() => setTab("correspondence")}><Mail className="mr-2 h-4 w-4" />Correspondence</Button>
           <Button variant={tab === "visitors" ? "default" : "outline"} onClick={() => setTab("visitors")}><Users className="mr-2 h-4 w-4" />Visitor Log</Button>
         </div>
 
@@ -290,12 +290,11 @@ function SecretaryOffice() {
   );
 }
 
-function Summary({ icon: Icon, label, value }: { icon: typeof CalendarDays; label: string; value: string }) {
+function Summary({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return <Panel><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted"><Icon className="h-5 w-5" /></div><div><p className="text-sm text-muted-foreground">{label}</p><p className="text-2xl font-bold">{value}</p></div></div></Panel>;
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="block space-y-1.5 text-sm"><span className="font-medium">{label}</span>{children}</label>;
 }
 function Loading() { return <p className="py-6 text-center text-sm text-muted-foreground">Loading records...</p>; }
 function Empty({ text }: { text: string }) { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{text}</div>; }
-function MailIcon(props: React.ComponentProps<typeof ClipboardList>) { return <FileText {...props} />; }
