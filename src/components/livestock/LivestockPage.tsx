@@ -465,7 +465,7 @@ export default function LivestockPage() {
         }
       />
 
-      <div className="space-y-6">
+      <div className="space-y-6">\n        <PendingApprovalsPanel />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Total livestock"
