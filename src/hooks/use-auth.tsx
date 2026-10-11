@@ -48,15 +48,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      setTimeout(() => { void loadAccess(s?.user.id).finally(() => setLoading(false)); }, 0);
+    let active = true;
+    let authEventReceived = false;
+    let lastLoadedUserId: string | null | undefined;
+
+    const applySession = (nextSession: Session | null, forceAccessRefresh = false) => {
+      if (!active) return;
+
+      setSession(nextSession);
+      const nextUserId = nextSession?.user.id ?? null;
+
+      // Avoid reloading profile/roles/permissions for every token refresh.
+      if (lastLoadedUserId === nextUserId && !forceAccessRefresh) {
+        setLoading(false);
+        return;
+      }
+
+      lastLoadedUserId = nextUserId;
+      void loadAccess(nextUserId ?? undefined).finally(() => {
+        if (active) setLoading(false);
+      });
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      authEventReceived = true;
+      // Defer Supabase queries until the auth callback has completed.
+      setTimeout(() => {
+        applySession(
+          nextSession,
+          event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED",
+        );
+      }, 0);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      void loadAccess(data.session?.user.id).finally(() => setLoading(false));
+
+    // getSession() and INITIAL_SESSION can race. Only use this result if no
+    // auth event has already supplied the current session.
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (error) console.error("[Auth] Failed to restore session:", error.message);
+      if (!authEventReceived) applySession(data.session);
+    }).catch((error: unknown) => {
+      console.error("[Auth] Session initialization failed:", error);
+      if (active) setLoading(false);
     });
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
   }, [loadAccess]);
 
   const value: AuthState = {
