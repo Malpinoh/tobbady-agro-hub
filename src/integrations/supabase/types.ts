@@ -1078,6 +1078,39 @@ export type Database = {
         Relationships: []
       }
     }
+      platform_backups: {
+        Row: {
+          backup_data: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string
+          record_counts: Json
+          schema_version: number
+          source: string
+        }
+        Insert: {
+          backup_data: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          record_counts?: Json
+          schema_version?: number
+          source?: string
+        }
+        Update: {
+          backup_data?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          record_counts?: Json
+          schema_version?: number
+          source?: string
+        }
+        Relationships: []
+      }
     Views: {
       [_ in never]: never
     }
@@ -1096,6 +1129,18 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       recalculate_batch_quantity: {
         Args: { p_batch_id: string }
+        Returns: undefined
+      }
+      create_platform_backup: {
+        Args: { p_reason?: string }
+        Returns: string
+      }
+      import_platform_backup: {
+        Args: { p_backup: Json; p_reason?: string }
+        Returns: string
+      }
+      restore_platform_backup: {
+        Args: { p_backup_id: string }
         Returns: undefined
       }
       reset_test_data: {
