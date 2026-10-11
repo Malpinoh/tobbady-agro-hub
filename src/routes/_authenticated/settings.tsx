@@ -15,6 +15,9 @@ import {
   RefreshCw,
   AlertTriangle,
   Trash2,
+  DatabaseBackup,
+  Download,
+  RotateCcw,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -1106,7 +1109,90 @@ function ResetTestDataSection() {
   const queryClient = useQueryClient();
   const [confirmation, setConfirmation] = useState("");
   const [message, setMessage] = useState("");
+  const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+  const [restoreConfirmation, setRestoreConfirmation] = useState("");
   const canReset = roles.includes("ceo") || roles.includes("administrator");
+
+  const backupsQuery = useQuery({
+    queryKey: ["platform-backups"],
+    enabled: canReset,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_backups")
+        .select("id, created_at, created_by, reason, source, record_counts, schema_version")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const refreshBackups = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["platform-backups"] });
+  };
+
+  const manualBackupMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("create_platform_backup", {
+        p_reason: "Manual backup from Settings",
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      setMessage("Backup created successfully. You can inspect or download it below.");
+      await refreshBackups();
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  const importBackupMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (file.size > 50 * 1024 * 1024) {
+        throw new Error("Backup files must be 50 MB or smaller.");
+      }
+      const parsed: unknown = JSON.parse(await file.text());
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        !("format" in parsed) ||
+        parsed.format !== "tobbady-agro-livestock-backup"
+      ) {
+        throw new Error("This is not a supported TOBADDY AGRO LIVESTOCK backup file.");
+      }
+      const { data, error } = await supabase.rpc("import_platform_backup", {
+        p_backup: parsed as import("@/integrations/supabase/types").Json,
+        p_reason: `Imported file: ${file.name}`,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      setMessage("Backup validated and imported. Inspect its record counts before restoring.");
+      await refreshBackups();
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async () => {
+      if (!restoreTarget) throw new Error("Select a backup to restore.");
+      if (restoreConfirmation.trim() !== "RESTORE") {
+        throw new Error("Type RESTORE exactly to confirm.");
+      }
+      const { error } = await supabase.rpc("restore_platform_backup", {
+        p_backup_id: restoreTarget,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      setRestoreTarget(null);
+      setRestoreConfirmation("");
+      setMessage("Backup restored. A safety backup of the previous operational data was also created.");
+      await queryClient.invalidateQueries({});
+      await refreshBackups();
+    },
+    onError: (error) => setMessage(friendlyError(error)),
+  });
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -1116,70 +1202,271 @@ function ResetTestDataSection() {
       if (confirmation.trim() !== "RESET") {
         throw new Error("Type RESET exactly to confirm.");
       }
-
+      // The database function creates and verifies its backup in the same transaction before deleting records.
       const { error } = await supabase.rpc("reset_test_data");
       if (error) throw error;
     },
     onSuccess: async () => {
       setConfirmation("");
-      setMessage("Test data has been reset. User accounts, roles, permissions, the farm profile and livestock types were preserved.");
+      setMessage("Test data has been reset. An automatic backup was saved in Backup History. User accounts, roles, permissions, the farm profile and livestock types were preserved.");
       await queryClient.invalidateQueries({});
+      await refreshBackups();
     },
     onError: (error) => setMessage(friendlyError(error)),
   });
 
+  async function downloadBackup(backupId: string) {
+    setMessage("");
+    try {
+      const { data, error } = await supabase
+        .from("platform_backups")
+        .select("id, created_at, reason, source, schema_version, record_counts, backup_data")
+        .eq("id", backupId)
+        .single();
+      if (error) throw error;
+
+      const archive = {
+        format: "tobbady-agro-livestock-backup",
+        version: 1,
+        createdAt: data.created_at,
+        reason: data.reason,
+        source: data.source,
+        recordCounts: data.record_counts,
+        data: data.backup_data,
+      };
+      const blob = new Blob([JSON.stringify(archive, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `tobbady-backup-${new Date(data.created_at).toISOString().replace(/[:.]/g, "-")}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setMessage("Backup downloaded as a JSON file.");
+    } catch (error) {
+      setMessage(friendlyError(error));
+    }
+  }
+
   if (!canReset) return null;
 
-  return (
-    <Panel>
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-          <AlertTriangle className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold">Reset Test Data</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Permanently remove test records from livestock, batches and movements,
-            sales, inventory, income and expenses, customers, suppliers, employees,
-            documents, notifications, secretary records, approvals, audit logs,
-            breeds and farm sections.
-          </p>
-          <p className="mt-2 text-sm font-medium">
-            This will not delete staff login accounts, assigned roles, permissions,
-            the official farm profile or livestock types. This action cannot be undone.
-          </p>
-        </div>
-      </div>
+  const backups = backupsQuery.data ?? [];
 
-      <div className="mt-5 max-w-xl space-y-3">
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium">Type RESET to confirm</span>
-          <Input
-            value={confirmation}
-            onChange={(event) => setConfirmation(event.target.value)}
-            placeholder="Type RESET"
-            autoComplete="off"
-            disabled={resetMutation.isPending}
-          />
-        </label>
+  return (
+    <div className="space-y-5">
+      <Panel>
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+            <DatabaseBackup className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold">Backup & Restore</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Every reset automatically saves the operational records first. Backups can be inspected, downloaded, uploaded again and restored later.
+            </p>
+            <p className="mt-2 text-sm font-medium">
+              Restoring replaces operational data and automatically saves a safety backup of the current data first. Staff accounts, roles, permissions, farm profile and livestock types are not replaced.
+            </p>
+          </div>
+        </div>
+
         {message && (
-          <p role="status" className="rounded-lg border p-3 text-sm">
+          <p role="status" className="mt-4 rounded-lg border p-3 text-sm">
             {message}
           </p>
         )}
-        <Button
-          variant="destructive"
-          disabled={confirmation.trim() !== "RESET" || resetMutation.isPending}
-          onClick={() => {
-            setMessage("");
-            resetMutation.mutate();
-          }}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          {resetMutation.isPending ? "Resetting data..." : "Reset All Test Data"}
-        </Button>
-      </div>
-    </Panel>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={manualBackupMutation.isPending}
+            onClick={() => {
+              setMessage("");
+              manualBackupMutation.mutate();
+            }}
+          >
+            <DatabaseBackup className="mr-2 h-4 w-4" />
+            {manualBackupMutation.isPending ? "Creating backup..." : "Create Backup Now"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={backupsQuery.isFetching}
+            onClick={() => void backupsQuery.refetch()}
+          >
+            {backupsQuery.isFetching ? "Refreshing..." : "Refresh History"}
+          </Button>
+        </div>
+
+        <div className="mt-5 rounded-lg border p-4">
+          <h4 className="font-medium">Upload a backup file</h4>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Upload a previously downloaded TOBADDY backup JSON file. It is validated and added to history; it is not restored until you explicitly select Restore.
+          </p>
+          <input
+            className="mt-3 block w-full text-sm"
+            type="file"
+            accept=".json,application/json"
+            disabled={importBackupMutation.isPending}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                setMessage("");
+                importBackupMutation.mutate(file);
+              }
+              event.currentTarget.value = "";
+            }}
+          />
+          {importBackupMutation.isPending && (
+            <p className="mt-2 text-sm text-muted-foreground">Validating and importing backup...</p>
+          )}
+        </div>
+
+        <div className="mt-5">
+          <h4 className="mb-3 font-medium">Backup History</h4>
+          {backupsQuery.isPending ? (
+            <p className="text-sm text-muted-foreground">Loading backups...</p>
+          ) : backupsQuery.isError ? (
+            <div className="rounded-lg border p-3 text-sm">
+              <p>Could not load backup history.</p>
+              <p className="mt-1 text-muted-foreground">{friendlyError(backupsQuery.error)}</p>
+              <p className="mt-1 text-muted-foreground">Apply migration 0014_platform_backups.sql to the connected Supabase project, then refresh.</p>
+            </div>
+          ) : backups.length === 0 ? (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              No backups yet. Create one now or reset test data to generate an automatic backup.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {backups.map((backup) => (
+                <div key={backup.id} className="rounded-lg border p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{backup.reason}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {new Date(backup.created_at).toLocaleString()} · {backup.source} backup
+                      </p>
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-sm font-medium">Inspect record counts</summary>
+                        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {Object.entries(backup.record_counts as Record<string, number>).map(([table, count]) => (
+                            <div key={table} className="rounded-md bg-muted/40 p-2 text-xs">
+                              <div className="break-words text-muted-foreground">{table.replace(/_/g, " ")}</div>
+                              <div className="mt-1 font-semibold tabular-nums">{count}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={() => void downloadBackup(backup.id)}>
+                        <Download className="mr-1.5 h-4 w-4" /> Download
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={restoreTarget === backup.id ? "default" : "outline"}
+                        onClick={() => {
+                          setRestoreTarget(backup.id);
+                          setRestoreConfirmation("");
+                          setMessage("");
+                        }}
+                      >
+                        <RotateCcw className="mr-1.5 h-4 w-4" /> {restoreTarget === backup.id ? "Selected" : "Select Restore"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {restoreTarget && (
+          <div className="mt-5 space-y-3 rounded-lg border border-destructive/40 p-4">
+            <h4 className="font-semibold">Confirm restore</h4>
+            <p className="text-sm text-muted-foreground">
+              This replaces current operational records with the selected backup. A safety backup is created first. Type RESTORE to continue.
+            </p>
+            <Input
+              value={restoreConfirmation}
+              onChange={(event) => setRestoreConfirmation(event.target.value)}
+              placeholder="Type RESTORE"
+              autoComplete="off"
+              disabled={restoreMutation.isPending}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={restoreConfirmation.trim() !== "RESTORE" || restoreMutation.isPending}
+                onClick={() => {
+                  setMessage("");
+                  restoreMutation.mutate();
+                }}
+              >
+                {restoreMutation.isPending ? "Restoring..." : "Restore Selected Backup"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={restoreMutation.isPending}
+                onClick={() => {
+                  setRestoreTarget(null);
+                  setRestoreConfirmation("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Panel>
+
+      <Panel>
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold">Reset Test Data</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Permanently remove operational test records from livestock, batches and movements, sales, inventory, income and expenses, customers, suppliers, employees, documents, notifications, secretary records, approvals, audit logs, breeds and farm sections.
+            </p>
+            <p className="mt-2 text-sm font-medium">
+              A verified automatic backup is created before reset. If backup creation fails, the reset is cancelled. Staff accounts, roles, permissions, the official farm profile and livestock types are preserved.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 max-w-xl space-y-3">
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium">Type RESET to confirm</span>
+            <Input
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+              placeholder="Type RESET"
+              autoComplete="off"
+              disabled={resetMutation.isPending}
+            />
+          </label>
+          <Button
+            variant="destructive"
+            disabled={confirmation.trim() !== "RESET" || resetMutation.isPending}
+            onClick={() => {
+              setMessage("");
+              resetMutation.mutate();
+            }}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {resetMutation.isPending ? "Backing up and resetting..." : "Backup & Reset All Test Data"}
+          </Button>
+        </div>
+      </Panel>
+    </div>
   );
 }
-
