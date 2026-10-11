@@ -17,7 +17,6 @@ import {
   Trash2,
   DatabaseBackup,
   Download,
-  Upload,
   RotateCcw,
 } from "lucide-react";
 
@@ -1161,7 +1160,7 @@ function ResetTestDataSection() {
         throw new Error("This is not a supported TOBADDY AGRO LIVESTOCK backup file.");
       }
       const { data, error } = await supabase.rpc("import_platform_backup", {
-        p_backup: parsed,
+        p_backup: parsed as import("@/integrations/supabase/types").Json,
         p_reason: `Imported file: ${file.name}`,
       });
       if (error) throw error;
