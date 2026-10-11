@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, RefreshCw, Building2, Download, FileText, Upload } from "lucide-react";
+import { ArrowRight, RefreshCw, Building2, Download, FileText, Upload, Users } from "lucide-react";
 import {
   PageHeader,
   Panel,
@@ -253,6 +253,23 @@ function CEOOffice() {
     },
   });
   const documents = documentsQuery.data ?? [];
+
+  // CEO Office reads the same visitor records maintained by the Secretary Office.
+  const visitorLogsQuery = useQuery({
+    queryKey: ["ceo-office-visitor-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("secretary_visitors")
+        .select("id, visitor_name, organization, purpose, person_to_visit, arrived_at, departed_at, notes")
+        .order("arrived_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: 30000,
+  });
+  const visitorLogs = visitorLogsQuery.data ?? [];
+  const visitorsOnSite = visitorLogs.filter((visitor) => !visitor.departed_at).length;
 
   const uploadDocumentMutation = useMutation({
     mutationFn: async (input: { file: File; title: string; category: string }) => {
@@ -1003,6 +1020,81 @@ function CEOOffice() {
 </Panel>
 
           
+          <Panel title="Visitor Logs" className="mt-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold">Secretary Office visitor register</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Read-only view of visitor records entered by the Secretary Office. Updates refresh automatically.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void visitorLogsQuery.refetch()}
+                disabled={visitorLogsQuery.isFetching}
+                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${visitorLogsQuery.isFetching ? "animate-spin" : ""}`} />
+                Refresh visitors
+              </button>
+            </div>
+
+            <div className="mb-4 flex items-center gap-3 rounded-lg border p-3">
+              <Users className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Visitors currently on site</p>
+                <p className="text-xl font-semibold">{visitorsOnSite}</p>
+              </div>
+            </div>
+
+            {visitorLogsQuery.isPending ? (
+              <p className="text-sm text-muted-foreground">Loading visitor records...</p>
+            ) : visitorLogsQuery.isError ? (
+              <div className="rounded-lg border border-destructive/40 p-4">
+                <p role="alert" className="text-sm text-destructive">
+                  Could not load visitor logs: {visitorLogsQuery.error.message}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Confirm that the Secretary Office database migration is applied and CEO/Administrator read access is enabled.
+                </p>
+              </div>
+            ) : visitorLogs.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center">
+                <Users className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 font-medium">No visitors recorded yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Visitors registered in the Secretary Office will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {visitorLogs.map((visitor) => (
+                  <article key={visitor.id} className="rounded-lg border p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="font-semibold">{visitor.visitor_name}</h4>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {visitor.organization || "No organization"} · Arrived {new Date(visitor.arrived_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${visitor.departed_at ? "bg-muted text-muted-foreground" : "bg-green-500/10 text-green-700 dark:text-green-400"}`}>
+                        {visitor.departed_at ? "Checked out" : "On site"}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm"><strong>Purpose:</strong> {visitor.purpose}</p>
+                    <p className="mt-1 text-sm"><strong>Meeting with:</strong> {visitor.person_to_visit || "Not specified"}</p>
+                    {visitor.departed_at && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Checked out: {new Date(visitor.departed_at).toLocaleString()}
+                      </p>
+                    )}
+                    {visitor.notes && <p className="mt-2 text-sm text-muted-foreground"><strong>Notes:</strong> {visitor.notes}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </Panel>
+
           <Panel title="Board Documents" className="mt-6">
             <div className="mb-4">
               <h3 className="font-semibold">
