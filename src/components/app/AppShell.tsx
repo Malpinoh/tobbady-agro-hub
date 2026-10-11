@@ -14,8 +14,14 @@ import { ROLE_LABELS } from "@/lib/access";
 import { useAuth } from "@/hooks/use-auth";
 
 function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
-  const { can } = useAuth();
-  const items = NAV_ITEMS.filter((i) => can(i.permission));
+  const { can, hasRole } = useAuth();
+  const isExecutive = hasRole("ceo") || hasRole("administrator");
+  const [showSecretaryOffice, setShowSecretaryOffice] = useState(false);
+  const items = NAV_ITEMS.filter(
+    (i) =>
+      can(i.permission) &&
+      (i.to !== "/secretary-office" || !isExecutive || showSecretaryOffice),
+  );
   return (
     <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
       {NAV_GROUPS.map((g) => {
@@ -39,6 +45,16 @@ function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
                 </li>
               ))}
             </ul>
+            {g === "Offices" && isExecutive && can("secretary.view") && (
+              <button
+                type="button"
+                onClick={() => setShowSecretaryOffice((shown) => !shown)}
+                aria-expanded={showSecretaryOffice}
+                className="mt-2 w-full rounded-md px-3 py-2 text-left text-xs font-medium text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                {showSecretaryOffice ? "Hide Secretary Office" : "Show Secretary Office"}
+              </button>
+            )}
           </div>
         );
       })}
