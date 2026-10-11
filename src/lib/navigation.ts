@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Crown, ClipboardList, Tractor, Beef, Wallet, ShoppingCart,
-  Package, Truck, Users, BarChart3, Bell, Settings, Tags, type LucideIcon,
+  Package, Truck, Users, BarChart3, Bell, Settings, Tags, FileUp, type LucideIcon,
 } from "lucide-react";
 import type { PermissionKey } from "./access";
 
@@ -17,6 +17,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard.view", group: "Overview" },
   { to: "/ceo-office", label: "CEO Office", icon: Crown, permission: "ceo.view", group: "Offices" },
   { to: "/secretary-office", label: "Secretary Office", icon: ClipboardList, permission: "secretary.view", group: "Offices" },
+  { to: "/board-documents", label: "Board Documents", icon: FileUp, permission: "documents.manage", group: "Offices" },
   { to: "/farm-operations", label: "Farm Operations", icon: Tractor, permission: "farm.view", group: "Operations" },
   { to: "/livestock", label: "Livestock", icon: Beef, permission: "livestock.view", group: "Operations" },
   { to: "/livestock-config", label: "Livestock Setup", icon: Tags, permission: "livestock.config.manage", group: "Operations" },
