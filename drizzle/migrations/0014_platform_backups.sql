@@ -186,9 +186,9 @@ BEGIN
     AND c.is_generated = 'NEVER'
     AND NOT (c.column_name = ANY(p_skip_columns));
 
-  SELECT COALESCE(jsonb_agg(item - p_skip_columns), '[]'::jsonb)
+  SELECT COALESCE(jsonb_agg(value - p_skip_columns), '[]'::jsonb)
   INTO v_rows
-  FROM jsonb_array_elements(p_rows) AS item;
+  FROM jsonb_array_elements(p_rows) AS rows(value);
 
   EXECUTE format(
     'INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_recordset(NULL::public.%I, $1) ON CONFLICT DO NOTHING',
