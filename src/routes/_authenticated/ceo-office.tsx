@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, RefreshCw, Building2 } from "lucide-react";
+import { ArrowRight, RefreshCw, Building2, Download, FileText, Upload } from "lucide-react";
 import {
   PageHeader,
   Panel,
@@ -9,6 +10,7 @@ import {
 } from "@/components/app/PageKit";
 import { formatNaira } from "@/lib/access";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/ceo-office")({
   head: () => ({
@@ -27,6 +29,13 @@ const money = (value: number) => formatNaira(value);
 const amount = (value: unknown) => Number(value ?? 0);
 
 function CEOOffice() {
+  const { can, hasRole } = useAuth();
+  const canUploadBoardDocuments = can("documents.manage");
+  const canViewBoardDocuments = hasRole("ceo") || hasRole("administrator");
+  const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [documentCategory, setDocumentCategory] = useState("Meeting minutes");
+  const documentFileInputRef = useRef<HTMLInputElement>(null);
   const query = useQuery({
     queryKey: ["ceo-office-live-data"],
     queryFn: async () => {
@@ -230,6 +239,99 @@ function CEOOffice() {
   });
 
   const queryClient = useQueryClient();
+
+  const documentsQuery = useQuery({
+    queryKey: ["board-documents-library"],
+    enabled: canViewBoardDocuments,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("id, title, category, file_path, uploaded_by, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const documents = documentsQuery.data ?? [];
+
+  const uploadDocumentMutation = useMutation({
+    mutationFn: async (input: { file: File; title: string; category: string }) => {
+      if (!canUploadBoardDocuments) {
+        throw new Error("You do not have permission to upload documents.");
+      }
+      if (input.file.size > 20 * 1024 * 1024) {
+        throw new Error("Files must be 20 MB or smaller.");
+      }
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Please sign in before uploading a document.");
+
+      const safeName = input.file.name
+        .normalize("NFKD")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "document";
+      const filePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: storageError } = await supabase.storage
+        .from("board-documents")
+        .upload(filePath, input.file, {
+          cacheControl: "3600",
+          contentType: input.file.type || "application/octet-stream",
+          upsert: false,
+        });
+      if (storageError) throw storageError;
+
+      const { error: metadataError } = await supabase.from("documents").insert({
+        title: input.title,
+        category: input.category,
+        file_path: filePath,
+        uploaded_by: user.id,
+      });
+      if (metadataError) {
+        await supabase.storage.from("board-documents").remove([filePath]);
+        throw metadataError;
+      }
+      return { title: input.title };
+    },
+    onSuccess: async () => {
+      setSelectedDocument(null);
+      setDocumentTitle("");
+      setDocumentCategory("Meeting minutes");
+      if (documentFileInputRef.current) documentFileInputRef.current.value = "";
+      if (canViewBoardDocuments) {
+        await queryClient.invalidateQueries({ queryKey: ["board-documents-library"] });
+      }
+    },
+  });
+
+  const downloadDocumentMutation = useMutation({
+    mutationFn: async (document: {
+      id: string;
+      title: string;
+      category: string | null;
+      file_path: string | null;
+      uploaded_by: string | null;
+      created_at: string;
+    }) => {
+      if (!canViewBoardDocuments) {
+        throw new Error("Only the CEO and Administrator can download board documents.");
+      }
+      if (!document.file_path) throw new Error("This record has no stored file path.");
+      const { data, error } = await supabase.storage
+        .from("board-documents")
+        .download(document.file_path);
+      if (error) throw error;
+
+      const objectUrl = URL.createObjectURL(data);
+      const anchor = window.document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = document.file_path.split("/").pop() || document.title;
+      anchor.rel = "noopener";
+      window.document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    },
+  });
 
   const decisionMutation = useMutation({
     mutationFn: async ({
@@ -943,37 +1045,193 @@ function CEOOffice() {
               ))}
             </div>
 
-            <div className="mt-5 rounded-xl border border-dashed p-6 text-center">
-              <h4 className="font-semibold">
-                Document library is not connected yet
-              </h4>
-              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-                When secure document storage is configured, authorized
-                users will be able to upload files, organize documents,
-                and view relevant board records.
-              </p>
-
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
+            <div className="mt-5 space-y-5">
+              {canUploadBoardDocuments ? (
+                <form
+                  className="rounded-xl border p-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (!selectedDocument || !documentTitle.trim()) return;
+                    uploadDocumentMutation.mutate({
+                      file: selectedDocument,
+                      title: documentTitle.trim(),
+                      category: documentCategory,
+                    });
+                  }}
                 >
-                  Upload document
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm opacity-50"
-                >
-                  View documents
-                </button>
-              </div>
+                  <div className="mb-4 flex items-start gap-3">
+                    <Upload className="mt-1 h-5 w-5 text-primary" />
+                    <div>
+                      <h4 className="font-semibold">Upload a board document</h4>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Files are stored in the private board-documents bucket. Maximum file size: 20 MB.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="text-sm font-medium">
+                      Document title
+                      <input
+                        value={documentTitle}
+                        onChange={(event) => setDocumentTitle(event.target.value)}
+                        required
+                        maxLength={160}
+                        placeholder="e.g. Board meeting minutes — October"
+                        className="mt-1 block w-full rounded-lg border bg-background px-3 py-2 font-normal"
+                      />
+                    </label>
+                    <label className="text-sm font-medium">
+                      Category
+                      <select
+                        value={documentCategory}
+                        onChange={(event) => setDocumentCategory(event.target.value)}
+                        className="mt-1 block w-full rounded-lg border bg-background px-3 py-2 font-normal"
+                      >
+                        <option value="Meeting minutes">Meeting minutes</option>
+                        <option value="Board resolutions">Board resolutions</option>
+                        <option value="Strategic plans">Strategic plans</option>
+                        <option value="Financial reports">Financial reports</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label className="mt-3 block text-sm font-medium">
+                    Choose file
+                    <input
+                      ref={documentFileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg"
+                      required
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setSelectedDocument(file);
+                        if (file && !documentTitle.trim()) {
+                          setDocumentTitle(file.name.replace(/\.[^.]+$/, ""));
+                        }
+                      }}
+                      className="mt-1 block w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    />
+                  </label>
+                  {selectedDocument && selectedDocument.size > 20 * 1024 * 1024 ? (
+                    <p className="mt-2 text-sm text-destructive">This file is larger than 20 MB. Please choose a smaller file.</p>
+                  ) : null}
+                  {uploadDocumentMutation.isError ? (
+                    <p role="alert" className="mt-3 text-sm text-destructive">
+                      Upload failed: {uploadDocumentMutation.error.message}
+                    </p>
+                  ) : null}
+                  {uploadDocumentMutation.isSuccess ? (
+                    <p role="status" className="mt-3 text-sm text-primary">
+                      Document uploaded successfully.
+                    </p>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={
+                      !selectedDocument ||
+                      !documentTitle.trim() ||
+                      selectedDocument.size > 20 * 1024 * 1024 ||
+                      uploadDocumentMutation.isPending
+                    }
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadDocumentMutation.isPending ? "Uploading..." : "Upload document"}
+                  </button>
+                </form>
+              ) : (
+                <div className="rounded-xl border border-dashed p-4">
+                  <p className="text-sm text-muted-foreground">
+                    You do not have permission to upload documents. Contact an administrator if you need access.
+                  </p>
+                </div>
+              )}
 
-              <p className="mt-3 text-xs text-muted-foreground">
-                Uploading and viewing are disabled until secure storage
-                and access permissions are configured.
-              </p>
+              {canViewBoardDocuments ? (
+                <div className="rounded-xl border p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-semibold">Board document library</h4>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Only the CEO and Administrator can view and download these records.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void documentsQuery.refetch()}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Refresh
+                    </button>
+                  </div>
+
+                  {documentsQuery.isPending ? (
+                    <p className="text-sm text-muted-foreground">Loading documents...</p>
+                  ) : documentsQuery.isError ? (
+                    <div>
+                      <p role="alert" className="text-sm text-destructive">
+                        Could not load the document library: {documentsQuery.error.message}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Check the documents table policy and private bucket permissions.
+                      </p>
+                    </div>
+                  ) : documents.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-6 text-center">
+                      <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <p className="mt-2 font-medium">No documents uploaded yet</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Uploaded board records will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {documents.map((document) => (
+                        <div
+                          key={document.id}
+                          className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex min-w-0 items-start gap-3">
+                            <FileText className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                            <div className="min-w-0">
+                              <p className="break-words font-medium">{document.title}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {document.category || "Uncategorized"} ·{" "}
+                                {new Date(document.created_at).toLocaleString()}
+                              </p>
+                              <p className="mt-1 break-all text-xs text-muted-foreground">
+                                {document.file_path?.split("/").pop() || "File path unavailable"}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={!document.file_path || downloadDocumentMutation.isPending}
+                            onClick={() => downloadDocumentMutation.mutate(document)}
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {downloadDocumentMutation.isError ? (
+                    <p role="alert" className="mt-3 text-sm text-destructive">
+                      Download failed: {downloadDocumentMutation.error.message}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed p-4">
+                  <h4 className="font-semibold">Document access is restricted</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You may upload a document if you have upload permission, but only the CEO and Administrator can view or download board documents.
+                  </p>
+                </div>
+              )}
             </div>
           </Panel>
 
