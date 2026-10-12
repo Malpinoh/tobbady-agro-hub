@@ -228,13 +228,6 @@ function Dashboard() {
   });
 
   const data = dashboardQuery.data;
-  const dashboardChartData = data
-    ? [
-        { category: "Livestock", quantity: data.totalLivestock },
-        { category: "Sales today", quantity: data.todaySales },
-        { category: "Expenses today", quantity: data.todayExpenses },
-      ]
-    : [];
   const livestockChartData = (data?.livestockSummary ?? []).map((item) => ({
     type: item.name,
     quantity: item.quantity,
