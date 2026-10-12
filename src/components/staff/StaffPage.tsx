@@ -87,6 +87,7 @@ export default function StaffPage() {
   const canManageEmployees =
     can("users.manage") || can("settings.manage");
   const canManageRoles =
+    hasRole("ceo") || hasRole("administrator") ||
     can("users.manage") || can("settings.manage");
 
   const [tab, setTab] = useState<Tab>("employees");
