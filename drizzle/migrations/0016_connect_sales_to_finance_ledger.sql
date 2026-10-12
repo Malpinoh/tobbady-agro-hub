@@ -1,0 +1,55 @@
+-- Keep the finance ledger connected to livestock sales without counting sales twice.
+ALTER TABLE public.income
+  ADD COLUMN IF NOT EXISTS sale_id uuid REFERENCES public.sales(id) ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS income_sale_id_unique
+  ON public.income (sale_id)
+  WHERE sale_id IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION public.sync_sale_payment_to_income()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF lower(COALESCE(NEW.status, '')) NOT IN ('cancelled', 'canceled', 'void', 'draft')
+     AND COALESCE(NEW.amount_paid, 0) > 0 THEN
+    INSERT INTO public.income (
+      sale_id, category, amount, received_on, description, reference, recorded_by, status
+    )
+    VALUES (
+      NEW.id,
+      'Livestock sales',
+      NEW.amount_paid,
+      NEW.sale_date,
+      'Payment received for invoice ' || NEW.invoice_number,
+      NEW.invoice_number,
+      NEW.sold_by,
+      'received'
+    )
+    ON CONFLICT (sale_id) WHERE sale_id IS NOT NULL
+    DO UPDATE SET
+      category = EXCLUDED.category,
+      amount = EXCLUDED.amount,
+      received_on = EXCLUDED.received_on,
+      description = EXCLUDED.description,
+      reference = EXCLUDED.reference,
+      recorded_by = EXCLUDED.recorded_by,
+      status = 'received';
+  ELSE
+    DELETE FROM public.income WHERE sale_id = NEW.id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS sales_sync_income_ledger ON public.sales;
+CREATE TRIGGER sales_sync_income_ledger
+AFTER INSERT OR UPDATE OF amount_paid, payment_status, status, total_amount, sale_date
+ON public.sales
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_sale_payment_to_income();
+
+REVOKE ALL ON FUNCTION public.sync_sale_payment_to_income() FROM PUBLIC;
