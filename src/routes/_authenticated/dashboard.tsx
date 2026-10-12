@@ -197,7 +197,7 @@ function Dashboard() {
         todayExpenses,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
-        estimatedProfit: monthSales + monthIncome - monthExpenses,
+        estimatedProfit: monthIncome - monthExpenses,
         livestockSummary,
         lowStock,
         recentSales: [...sales]
