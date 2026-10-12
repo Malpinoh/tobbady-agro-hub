@@ -52,78 +52,75 @@ export type Database = {
       }
       animal_batches: {
         Row: {
+          acquisition_cost: number | null
           approval_status: string
           approved_at: string | null
           approved_by: string | null
-          rejection_reason: string | null
-          submitted_by: string | null
-
-          acquisition_cost: number | null
           batch_code: string
           breed_id: string | null
           created_at: string
           created_by: string | null
           current_quantity: number
           estimated_unit_value: number | null
-          farm_section_id: string | null
           farm_id: string | null
-          location_description: string | null
+          farm_section_id: string | null
           id: string
           initial_quantity: number
           livestock_type_id: string
+          location_description: string | null
           notes: string | null
+          rejection_reason: string | null
           started_on: string | null
           status: string
+          submitted_by: string | null
           updated_at: string
         }
         Insert: {
+          acquisition_cost?: number | null
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          rejection_reason?: string | null
-          submitted_by?: string | null
-
-          acquisition_cost?: number | null
           batch_code: string
           breed_id?: string | null
           created_at?: string
           created_by?: string | null
           current_quantity?: number
           estimated_unit_value?: number | null
-          farm_section_id?: string | null
           farm_id?: string | null
-          location_description?: string | null
+          farm_section_id?: string | null
           id?: string
           initial_quantity?: number
           livestock_type_id: string
+          location_description?: string | null
           notes?: string | null
+          rejection_reason?: string | null
           started_on?: string | null
           status?: string
+          submitted_by?: string | null
           updated_at?: string
         }
         Update: {
+          acquisition_cost?: number | null
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          rejection_reason?: string | null
-          submitted_by?: string | null
-
-          acquisition_cost?: number | null
           batch_code?: string
           breed_id?: string | null
           created_at?: string
           created_by?: string | null
           current_quantity?: number
           estimated_unit_value?: number | null
-          farm_section_id?: string | null
           farm_id?: string | null
-          location_description?: string | null
+          farm_section_id?: string | null
           id?: string
           initial_quantity?: number
           livestock_type_id?: string
+          location_description?: string | null
           notes?: string | null
+          rejection_reason?: string | null
           started_on?: string | null
           status?: string
+          submitted_by?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -132,6 +129,13 @@ export type Database = {
             columns: ["breed_id"]
             isOneToOne: false
             referencedRelation: "breeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_batches_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
           {
@@ -152,77 +156,74 @@ export type Database = {
       }
       animals: {
         Row: {
+          acquired_on: string | null
+          acquisition_cost: number | null
           approval_status: string
           approved_at: string | null
           approved_by: string | null
-          rejection_reason: string | null
-          submitted_by: string | null
-
-          acquired_on: string | null
-          acquisition_cost: number | null
           breed_id: string | null
           created_at: string
           created_by: string | null
           date_of_birth: string | null
           estimated_value: number | null
-          farm_section_id: string | null
           farm_id: string | null
-          location_description: string | null
+          farm_section_id: string | null
           id: string
           livestock_type_id: string
+          location_description: string | null
           notes: string | null
+          rejection_reason: string | null
           sex: string | null
           status: string
+          submitted_by: string | null
           tag_number: string
           updated_at: string
         }
         Insert: {
+          acquired_on?: string | null
+          acquisition_cost?: number | null
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          rejection_reason?: string | null
-          submitted_by?: string | null
-
-          acquired_on?: string | null
-          acquisition_cost?: number | null
           breed_id?: string | null
           created_at?: string
           created_by?: string | null
           date_of_birth?: string | null
           estimated_value?: number | null
-          farm_section_id?: string | null
           farm_id?: string | null
-          location_description?: string | null
+          farm_section_id?: string | null
           id?: string
           livestock_type_id: string
+          location_description?: string | null
           notes?: string | null
+          rejection_reason?: string | null
           sex?: string | null
           status?: string
+          submitted_by?: string | null
           tag_number: string
           updated_at?: string
         }
         Update: {
+          acquired_on?: string | null
+          acquisition_cost?: number | null
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          rejection_reason?: string | null
-          submitted_by?: string | null
-
-          acquired_on?: string | null
-          acquisition_cost?: number | null
           breed_id?: string | null
           created_at?: string
           created_by?: string | null
           date_of_birth?: string | null
           estimated_value?: number | null
-          farm_section_id?: string | null
           farm_id?: string | null
-          location_description?: string | null
+          farm_section_id?: string | null
           id?: string
           livestock_type_id?: string
+          location_description?: string | null
           notes?: string | null
+          rejection_reason?: string | null
           sex?: string | null
           status?: string
+          submitted_by?: string | null
           tag_number?: string
           updated_at?: string
         }
@@ -232,6 +233,13 @@ export type Database = {
             columns: ["breed_id"]
             isOneToOne: false
             referencedRelation: "breeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animals_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
           {
@@ -332,6 +340,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_targets: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          metric: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          target_value: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          metric: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          target_value: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          metric?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          target_value?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       customers: {
         Row: {
@@ -438,14 +485,78 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_approvals: {
+        Row: {
+          amount: number | null
+          created_at: string
+          decision_notes: string | null
+          expense_id: string | null
+          id: string
+          paid_at: string | null
+          paid_by: string | null
+          payment_status: string
+          request_details: string | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          decision_notes?: string | null
+          expense_id?: string | null
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_status?: string
+          request_details?: string | null
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          decision_notes?: string | null
+          expense_id?: string | null
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_status?: string
+          request_details?: string | null
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_approvals_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
+          approval_id: string | null
           approved_by: string | null
           category: string
           created_at: string
           description: string | null
           id: string
+          payment_status: string
           recorded_by: string | null
           reference: string | null
           spent_on: string
@@ -455,11 +566,13 @@ export type Database = {
         }
         Insert: {
           amount: number
+          approval_id?: string | null
           approved_by?: string | null
           category: string
           created_at?: string
           description?: string | null
           id?: string
+          payment_status?: string
           recorded_by?: string | null
           reference?: string | null
           spent_on?: string
@@ -469,11 +582,13 @@ export type Database = {
         }
         Update: {
           amount?: number
+          approval_id?: string | null
           approved_by?: string | null
           category?: string
           created_at?: string
           description?: string | null
           id?: string
+          payment_status?: string
           recorded_by?: string | null
           reference?: string | null
           spent_on?: string
@@ -482,6 +597,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "executive_approvals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -600,17 +722,16 @@ export type Database = {
           approval_status: string
           approved_at: string | null
           approved_by: string | null
-          rejection_reason: string | null
-          submitted_by: string | null
-          submitted_quantity: number
-
           category: string | null
           created_at: string
           id: string
           name: string
           quantity_on_hand: number
+          rejection_reason: string | null
           reorder_level: number
           sku: string | null
+          submitted_by: string | null
+          submitted_quantity: number
           unit: string
           unit_cost: number | null
           updated_at: string
@@ -619,17 +740,16 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          rejection_reason?: string | null
-          submitted_by?: string | null
-          submitted_quantity?: number
-
           category?: string | null
           created_at?: string
           id?: string
           name: string
           quantity_on_hand?: number
+          rejection_reason?: string | null
           reorder_level?: number
           sku?: string | null
+          submitted_by?: string | null
+          submitted_quantity?: number
           unit?: string
           unit_cost?: number | null
           updated_at?: string
@@ -638,17 +758,16 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          rejection_reason?: string | null
-          submitted_by?: string | null
-          submitted_quantity?: number
-
           category?: string | null
           created_at?: string
           id?: string
           name?: string
           quantity_on_hand?: number
+          rejection_reason?: string | null
           reorder_level?: number
           sku?: string | null
+          submitted_by?: string | null
+          submitted_quantity?: number
           unit?: string
           unit_cost?: number | null
           updated_at?: string
@@ -709,7 +828,7 @@ export type Database = {
           },
         ]
       }
-            livestock_categories: {
+      livestock_categories: {
         Row: {
           created_at: string
           description: string | null
@@ -744,8 +863,8 @@ export type Database = {
       }
       livestock_types: {
         Row: {
-          created_at: string
           category_id: string | null
+          created_at: string
           id: string
           is_active: boolean
           name: string
@@ -756,8 +875,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          created_at?: string
           category_id?: string | null
+          created_at?: string
           id?: string
           is_active?: boolean
           name: string
@@ -768,8 +887,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          created_at?: string
           category_id?: string | null
+          created_at?: string
           id?: string
           is_active?: boolean
           name?: string
@@ -779,7 +898,7 @@ export type Database = {
           unit_label?: string
           updated_at?: string
         }
-                Relationships: [
+        Relationships: [
           {
             foreignKeyName: "livestock_types_category_id_fkey"
             columns: ["category_id"]
@@ -843,6 +962,39 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_backups: {
+        Row: {
+          backup_data: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string
+          record_counts: Json
+          schema_version: number
+          source: string
+        }
+        Insert: {
+          backup_data: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          record_counts?: Json
+          schema_version?: number
+          source?: string
+        }
+        Update: {
+          backup_data?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          record_counts?: Json
+          schema_version?: number
+          source?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -873,6 +1025,57 @@ export type Database = {
           is_active?: boolean
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      record_change_requests: {
+        Row: {
+          id: string
+          original_values: Json
+          proposed_values: Json | null
+          reason: string
+          record_id: string
+          record_label: string
+          record_type: string
+          rejection_reason: string | null
+          request_type: string
+          requested_at: string
+          requested_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          id?: string
+          original_values?: Json
+          proposed_values?: Json | null
+          reason: string
+          record_id: string
+          record_label: string
+          record_type: string
+          rejection_reason?: string | null
+          request_type: string
+          requested_at?: string
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          id?: string
+          original_values?: Json
+          proposed_values?: Json | null
+          reason?: string
+          record_id?: string
+          record_label?: string
+          record_type?: string
+          rejection_reason?: string | null
+          request_type?: string
+          requested_at?: string
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -1020,6 +1223,138 @@ export type Database = {
           },
         ]
       }
+      secretary_correspondence: {
+        Row: {
+          correspondence_date: string
+          correspondent: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          reference_number: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          correspondence_date?: string
+          correspondent?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          reference_number?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          correspondence_date?: string
+          correspondent?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          reference_number?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      secretary_meetings: {
+        Row: {
+          agenda: string | null
+          created_at: string
+          created_by: string | null
+          follow_up: string | null
+          id: string
+          meeting_date: string
+          meeting_time: string | null
+          minutes: string | null
+          participants: string | null
+          status: string
+          title: string
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          agenda?: string | null
+          created_at?: string
+          created_by?: string | null
+          follow_up?: string | null
+          id?: string
+          meeting_date: string
+          meeting_time?: string | null
+          minutes?: string | null
+          participants?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          agenda?: string | null
+          created_at?: string
+          created_by?: string | null
+          follow_up?: string | null
+          id?: string
+          meeting_date?: string
+          meeting_time?: string | null
+          minutes?: string | null
+          participants?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      secretary_visitors: {
+        Row: {
+          arrived_at: string
+          created_at: string
+          departed_at: string | null
+          id: string
+          notes: string | null
+          organization: string | null
+          person_to_visit: string | null
+          purpose: string
+          recorded_by: string | null
+          visitor_name: string
+        }
+        Insert: {
+          arrived_at?: string
+          created_at?: string
+          departed_at?: string | null
+          id?: string
+          notes?: string | null
+          organization?: string | null
+          person_to_visit?: string | null
+          purpose: string
+          recorded_by?: string | null
+          visitor_name: string
+        }
+        Update: {
+          arrived_at?: string
+          created_at?: string
+          departed_at?: string | null
+          id?: string
+          notes?: string | null
+          organization?: string | null
+          person_to_visit?: string | null
+          purpose?: string
+          recorded_by?: string | null
+          visitor_name?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -1078,43 +1413,17 @@ export type Database = {
         Relationships: []
       }
     }
-      platform_backups: {
-        Row: {
-          backup_data: Json
-          created_at: string
-          created_by: string | null
-          id: string
-          reason: string
-          record_counts: Json
-          schema_version: number
-          source: string
-        }
-        Insert: {
-          backup_data: Json
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          reason?: string
-          record_counts?: Json
-          schema_version?: number
-          source?: string
-        }
-        Update: {
-          backup_data?: Json
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          reason?: string
-          record_counts?: Json
-          schema_version?: number
-          source?: string
-        }
-        Relationships: []
-      }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      _capture_platform_backup: { Args: never; Returns: Json }
+      _platform_backup_counts: { Args: { p_data: Json }; Returns: Json }
+      _restore_platform_backup_table: {
+        Args: { p_rows: Json; p_skip_columns?: string[]; p_table: string }
+        Returns: undefined
+      }
+      create_platform_backup: { Args: { p_reason?: string }; Returns: string }
       has_permission: {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
@@ -1126,25 +1435,46 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_platform_backup: {
+        Args: { p_backup: Json; p_reason?: string }
+        Returns: string
+      }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       recalculate_batch_quantity: {
         Args: { p_batch_id: string }
         Returns: undefined
       }
-      create_platform_backup: {
-        Args: { p_reason?: string }
+      record_approved_purchase_as_paid: {
+        Args: {
+          p_approval_id: string
+          p_category?: string
+          p_reference?: string
+          p_spent_on: string
+        }
         Returns: string
       }
-      import_platform_backup: {
-        Args: { p_backup: Json; p_reason?: string }
-        Returns: string
+      record_inventory_movement: {
+        Args: {
+          p_item_id: string
+          p_notes?: string
+          p_quantity: number
+          p_reference?: string
+          p_transaction_type: string
+          p_unit_cost?: number
+        }
+        Returns: undefined
       }
+      reset_test_data: { Args: never; Returns: undefined }
       restore_platform_backup: {
         Args: { p_backup_id: string }
         Returns: undefined
       }
-      reset_test_data: {
-        Args: Record<PropertyKey, never>
+      review_record_change_request: {
+        Args: {
+          p_decision: string
+          p_rejection_reason?: string
+          p_request_id: string
+        }
         Returns: undefined
       }
     }
