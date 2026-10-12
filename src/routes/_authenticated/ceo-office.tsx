@@ -58,7 +58,7 @@ function CEOOffice() {
         "id, spent_on, amount, status, payment_status"
       ),
         supabase.from("income").select(
-          "id, received_on, amount, status"
+          "id, sale_id, received_on, amount, status"
         ),
         supabase.from("inventory_items").select(
           "id, name, quantity_on_hand, reorder_level"
@@ -94,7 +94,10 @@ function CEOOffice() {
 
       const validExpenses = expenses.filter((e) => e.status === "approved");
 
-      const validIncome = income.filter((i) => ["received", "approved"].includes(i.status));
+      // Sale-linked income is already represented in sales revenue; count only other income here.
+      const validIncome = income.filter(
+        (i) => !i.sale_id && ["received", "approved"].includes(i.status)
+      );
 
       const activeBatches = batches.filter(
         (b) => b.status !== "sold" && b.status !== "inactive"

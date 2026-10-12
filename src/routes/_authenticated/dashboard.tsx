@@ -61,7 +61,7 @@ function Dashboard() {
           .select("id, spent_on, amount, status"),
         supabase
           .from("income")
-          .select("id, received_on, amount, status"),
+          .select("id, sale_id, received_on, amount, status"),
         supabase
           .from("inventory_items")
           .select("id, name, quantity_on_hand, reorder_level, unit")
@@ -169,6 +169,7 @@ function Dashboard() {
       const monthIncome = income
         .filter(
           (item) =>
+            !item.sale_id &&
             item.received_on >= monthStart &&
             item.received_on <= today &&
             ["received", "approved"].includes(item.status)
