@@ -162,8 +162,7 @@ function Dashboard() {
         .filter(
           (expense) =>
             expense.spent_on === today &&
-            expense.status !== "cancelled" &&
-            expense.status !== "rejected"
+            expense.status === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
@@ -172,8 +171,7 @@ function Dashboard() {
           (item) =>
             item.received_on >= monthStart &&
             item.received_on <= today &&
-            item.status !== "cancelled" &&
-            item.status !== "rejected"
+            ["received", "approved"].includes(item.status)
         )
         .reduce((sum, item) => sum + number(item.amount), 0);
 
@@ -182,8 +180,7 @@ function Dashboard() {
           (expense) =>
             expense.spent_on >= monthStart &&
             expense.spent_on <= today &&
-            expense.status !== "cancelled" &&
-            expense.status !== "rejected"
+            expense.status === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
