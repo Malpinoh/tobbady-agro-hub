@@ -44,6 +44,8 @@ type IncomeRecord = {
   reference: string | null;
   status: string;
   created_at: string;
+  animal_id?: string | null;
+  batch_id?: string | null;
 };
 
 type ExpenseRecord = {
@@ -58,6 +60,8 @@ type ExpenseRecord = {
   status: string;
   payment_status: string;
   created_at: string;
+  animal_id?: string | null;
+  batch_id?: string | null;
 };
 
 const incomeCategories = [
@@ -102,6 +106,7 @@ function FinanceContent() {
     description: "",
     date: new Date().toISOString().slice(0, 10),
     reference: "",
+    livestockLink: "none",
   });
 
   const incomeQuery = useQuery({
@@ -130,8 +135,34 @@ function FinanceContent() {
     },
   });
 
+  const animalLinkQuery = useQuery({
+    queryKey: ["finance-livestock-link-animals"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("animals").select("id, tag_number").eq("approval_status", "approved").order("tag_number");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const batchLinkQuery = useQuery({
+    queryKey: ["finance-livestock-link-batches"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("animal_batches").select("id, batch_code").eq("approval_status", "approved").order("batch_code");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const incomes = incomeQuery.data ?? [];
   const expenses = expensesQuery.data ?? [];
+  const linkAnimals = animalLinkQuery.data ?? [];
+  const linkBatches = batchLinkQuery.data ?? [];
+  const livestockLinkLabel = (animalId?: string | null, batchId?: string | null) =>
+    animalId
+      ? linkAnimals.find((animal) => animal.id === animalId)?.tag_number ?? "Individual livestock"
+      : batchId
+        ? linkBatches.find((batch) => batch.id === batchId)?.batch_code ?? "Livestock batch"
+        : "General farm operation";
 
   const totalIncome = incomes
     .filter((record) => record.status === "received" || record.status === "approved")
@@ -164,6 +195,7 @@ const paidExpenses = expenses
       description: record.description,
       date: record.received_on,
       reference: record.reference,
+      livestockLink: livestockLinkLabel(record.animal_id, record.batch_id),
       status: record.status,
     }));
 
@@ -175,6 +207,7 @@ const paidExpenses = expenses
       description: record.description,
       date: record.spent_on,
       reference: record.reference,
+      livestockLink: livestockLinkLabel(record.animal_id, record.batch_id),
       status: record.status,
     }));
 
@@ -191,7 +224,7 @@ const paidExpenses = expenses
         );
       })
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [incomes, expenses, search]);
+  }, [incomes, expenses, search, linkAnimals, linkBatches]);
 
   function openRecord(type: "income" | "expense") {
     setRecordType(type);
@@ -201,6 +234,7 @@ const paidExpenses = expenses
       description: "",
       date: new Date().toISOString().slice(0, 10),
       reference: "",
+      livestockLink: "none",
     });
     setDialogOpen(true);
   }
@@ -235,7 +269,9 @@ const paidExpenses = expenses
           reference: form.reference.trim() || null,
           recorded_by: user?.id ?? null,
           status: "received",
-        });
+          animal_id: form.livestockLink.startsWith("animal:") ? form.livestockLink.slice(7) : null,
+          batch_id: form.livestockLink.startsWith("batch:") ? form.livestockLink.slice(6) : null,
+        } as any);
 
         if (error) throw error;
       } else {
@@ -247,7 +283,9 @@ const paidExpenses = expenses
           reference: form.reference.trim() || null,
           recorded_by: user?.id ?? null,
           status: "pending",
-        });
+          animal_id: form.livestockLink.startsWith("animal:") ? form.livestockLink.slice(7) : null,
+          batch_id: form.livestockLink.startsWith("batch:") ? form.livestockLink.slice(6) : null,
+        } as any);
 
         if (error) throw error;
       }
@@ -477,6 +515,7 @@ const paidExpenses = expenses
                 <th className="p-3 font-medium">Date</th>
                 <th className="p-3 font-medium">Type</th>
                 <th className="p-3 font-medium">Category / description</th>
+                <th className="p-3 font-medium">Livestock / batch</th>
                 <th className="p-3 font-medium">Reference</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Status</th>
@@ -486,7 +525,7 @@ const paidExpenses = expenses
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={canApprove ? 7 : 6} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={canApprove ? 8 : 7} className="p-8 text-center text-muted-foreground">
                     Loading finance records...
                   </td>
                 </tr>
@@ -529,6 +568,7 @@ const paidExpenses = expenses
                           </p>
                         )}
                       </td>
+                      <td className="p-3">{record.livestockLink}</td>
                       <td className="p-3">{record.reference || "—"}</td>
                       <td className="whitespace-nowrap p-3 font-medium">
                         {formatNaira(record.amount)}
@@ -617,6 +657,19 @@ const paidExpenses = expenses
                   )}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Link to livestock (optional)</Label>
+              <Select value={form.livestockLink} onValueChange={(value) => setForm({ ...form, livestockLink: value })}>
+                <SelectTrigger><SelectValue placeholder="General farm operation" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">General farm operation</SelectItem>
+                  {linkAnimals.map((animal) => <SelectItem key={animal.id} value={`animal:${animal.id}`}>Animal · {animal.tag_number}</SelectItem>)}
+                  {linkBatches.map((batch) => <SelectItem key={batch.id} value={`batch:${batch.id}`}>Batch · {batch.batch_code}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Attach this income or expense to a specific approved animal or batch for cost and profitability tracking.</p>
             </div>
 
             <div className="space-y-2">
