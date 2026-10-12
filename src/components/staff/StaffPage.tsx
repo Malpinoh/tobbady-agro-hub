@@ -537,7 +537,7 @@ export default function StaffPage() {
                         <td className="p-3">{profile.phone || "—"}</td>
                         <td className="p-3">{roleNames(profile.id)}</td>
                         <td className="p-3">
-                          {profile.is_active ? "Active" : "Inactive"}
+                          {userRoles.some((item) => item.user_id === profile.id) ? (profile.is_active ? "Active" : "Inactive") : "Pending role assignment"}
                         </td>
                       </tr>
                     ))}
@@ -559,8 +559,7 @@ export default function StaffPage() {
             {tab === "roles" && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Assign an application role to an existing user account.
-                  Only assign roles appropriate to each person's duties.
+                  New signups appear here with no role assigned. Review each account and assign a suitable role before the user can access farm operations.
                 </p>
                 {profiles.map((profile) => {
                   const assignedRoles = userRoles.filter(
