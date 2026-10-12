@@ -167,16 +167,6 @@ function Dashboard() {
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
-      const monthSales = sales
-        .filter(
-          (sale) =>
-            sale.sale_date >= monthStart &&
-            sale.sale_date <= today &&
-            sale.status !== "cancelled" &&
-            sale.status !== "void"
-        )
-        .reduce((sum, sale) => sum + number(sale.total_amount), 0);
-
       const monthIncome = income
         .filter(
           (item) =>
@@ -208,7 +198,7 @@ function Dashboard() {
         livestockValue: batchValue + animalValue,
         todaySales,
         todayExpenses,
-        monthlyRevenue: monthSales + monthIncome,
+        monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
         estimatedProfit: monthSales + monthIncome - monthExpenses,
         livestockSummary,
