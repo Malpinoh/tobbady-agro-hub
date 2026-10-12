@@ -3,14 +3,15 @@
 -- to the sale instead of being duplicated. Ambiguous invoice matches are left untouched
 -- and future edits to that sale fail clearly until the ledger is reconciled manually.
 
--- Link one unassigned "Livestock sales" income row to a sale when the invoice reference
--- identifies exactly one sale and exactly one unassigned income row.
+-- Link one unassigned "Livestock sales" income row to a sale only when invoice reference
+-- AND amount match, and the pair is unambiguous. Never rewrite an unmatched historical row.
 WITH candidate_pairs AS (
   SELECT s.id AS sale_id, i.id AS income_id
   FROM public.sales s
   JOIN public.income i
     ON i.sale_id IS NULL
    AND i.reference = s.invoice_number
+   AND i.amount = s.amount_paid
    AND lower(btrim(i.category)) = 'livestock sales'
 ),
 unique_pairs AS (
@@ -51,11 +52,21 @@ BEGIN
       FROM public.income i
       WHERE i.sale_id IS NULL
         AND i.reference = NEW.invoice_number
+        AND i.amount = NEW.amount_paid
         AND lower(btrim(i.category)) = 'livestock sales';
 
       IF v_candidate_count > 1 THEN
         RAISE EXCEPTION
           'Cannot sync sale invoice %: multiple unlinked income rows use this invoice reference. Reconcile these rows before updating the sale.',
+          NEW.invoice_number;
+      ELSIF v_candidate_count = 0 AND EXISTS (
+        SELECT 1
+        FROM public.income i
+        WHERE i.sale_id IS NULL
+          AND i.reference = NEW.invoice_number
+      ) THEN
+        RAISE EXCEPTION
+          'Cannot sync sale invoice %: an existing unlinked income row uses this invoice reference but does not match the payment amount/category. Reconcile it manually to avoid overwriting or duplicating financial history.',
           NEW.invoice_number;
       ELSIF v_candidate_count = 1 THEN
         UPDATE public.income i
@@ -70,6 +81,7 @@ BEGIN
             updated_at = now()
         WHERE i.sale_id IS NULL
           AND i.reference = NEW.invoice_number
+          AND i.amount = NEW.amount_paid
           AND lower(btrim(i.category)) = 'livestock sales'
         RETURNING i.id INTO v_income_id;
       END IF;
