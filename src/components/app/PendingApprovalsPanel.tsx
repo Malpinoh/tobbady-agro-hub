@@ -25,6 +25,7 @@ type PendingRow =
       recordType: "animal" | "batch";
       requestType: "edit" | "delete";
       reason: string;
+      requestedBy: string;
       proposed: unknown;
       original: unknown;
     };
@@ -93,6 +94,7 @@ export function PendingApprovalsPanel() {
           recordType: x.record_type as "animal" | "batch",
           requestType: x.request_type as "edit" | "delete",
           reason: String(x.reason ?? "No reason supplied"),
+          requestedBy: String(x.requested_by ?? "Unknown user"),
           proposed: x.proposed_values,
           original: x.original_values,
         })),
@@ -178,6 +180,9 @@ export function PendingApprovalsPanel() {
                   {row.kind === "change-request" && (
                     <p className="mt-2 text-sm">
                       <strong>Secretary's reason:</strong> {row.reason}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      <strong>Requested by:</strong> {row.requestedBy}
                     </p>
                   )}
                 </div>
