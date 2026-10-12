@@ -50,8 +50,19 @@ export function DemoTag() {
 
 /** Blocks page content unless the user has the given permission. */
 export function RequirePermission({ perm, children }: { perm: string; children: ReactNode }) {
-  const { can, loading } = useAuth();
+  const { can, loading, roles } = useAuth();
   if (loading) return null;
+  if (roles.length === 0) {
+    return (
+      <div className="mx-auto mt-16 max-w-lg rounded-xl border bg-card p-8 text-center shadow-card">
+        <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
+        <h2 className="mt-4 text-lg font-semibold">Account pending approval</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Your account has been created, but no farm role has been assigned yet. The CEO or Administrator must review your signup and assign your role before you can access farm operations.
+        </p>
+      </div>
+    );
+  }
   if (!can(perm)) {
     return (
       <div className="mx-auto mt-16 max-w-md rounded-xl border bg-card p-8 text-center shadow-card">

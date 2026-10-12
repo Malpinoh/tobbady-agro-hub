@@ -15,6 +15,7 @@ import {
   Tag,
   TrendingUp,
   X,
+  MoreHorizontal,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import {
   PageHeader,
@@ -120,11 +122,13 @@ function AnimalTable({
   animals,
   lk,
   onSelect,
+  onEdit,
   onAdd,
 }: {
   animals: Animal[];
   lk: ReturnType<typeof makeLookups>;
   onSelect: (animal: Animal) => void;
+  onEdit: (animal: Animal) => void;
   onAdd: () => void;
 }) {
   if (!animals.length) {
@@ -154,6 +158,7 @@ function AnimalTable({
             <th className="px-3 py-3 font-medium">Location</th>
             <th className="px-3 py-3 font-medium">Value</th>
             <th className="px-3 py-3 font-medium">Status</th>
+            <th className="px-3 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
 
@@ -206,6 +211,21 @@ function AnimalTable({
                 <StatusBadge tone={statusTone(animal.status)}>
                   {titleCase(animal.status)}
                 </StatusBadge>
+              </td>
+              <td className="px-3 py-3 text-right" onClick={(event) => event.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" aria-label={`Actions for ${animal.tag_number}`}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => onSelect(animal)}>View details</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onEdit(animal)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Edit livestock
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </td>
             </tr>
           ))}
@@ -334,18 +354,21 @@ function BatchTable({
                   </StatusBadge>
                 </td>
                 <td className="px-3 py-3">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onEdit(batch);
-                    }}
-                  >
-                    <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                    Request edit
-                  </Button>
+                  <div onClick={(event) => event.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" aria-label={`Actions for ${batch.batch_code}`}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => onSelect(batch)}>View details</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => onEdit(batch)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Edit livestock
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </td>
               </tr>
             );
@@ -683,6 +706,10 @@ export default function LivestockPage() {
                   animals={(animals.data ?? []).slice(0, 8)}
                   lk={lk}
                   onSelect={setSelectedAnimal}
+                  onEdit={(animal) => {
+                    setEditingAnimal(animal);
+                    setAnimalDialogOpen(true);
+                  }}
                   onAdd={() => {
                     setEditingAnimal(null);
                     setAnimalDialogOpen(true);
@@ -822,6 +849,10 @@ export default function LivestockPage() {
                 animals={filteredAnimals}
                 lk={lk}
                 onSelect={setSelectedAnimal}
+                onEdit={(animal) => {
+                  setEditingAnimal(animal);
+                  setAnimalDialogOpen(true);
+                }}
                 onAdd={() => {
                   setEditingAnimal(null);
                   setAnimalDialogOpen(true);

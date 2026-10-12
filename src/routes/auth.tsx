@@ -54,7 +54,7 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) toast.error(error.message);
-    else toast.success("Account created. Check your email to confirm, then sign in.");
+    else toast.success("Account created. Check your email to confirm. Your account will remain pending until the CEO or Administrator assigns a role.");
   }
 
   async function google() {
@@ -95,7 +95,7 @@ function AuthPage() {
                 <Field name="email" label="Email" type="email" />
                 <Field name="password" label="Password" type="password" minLength={8} />
                 <Button className="w-full" disabled={busy}>Create account</Button>
-                <p className="text-xs text-muted-foreground">New accounts get basic access. An administrator assigns your role.</p>
+                <p className="text-xs text-muted-foreground">New accounts receive no role or farm access until the CEO or Administrator reviews the request and assigns a role.</p>
               </form>
             </TabsContent>
           </Tabs>

@@ -10,6 +10,7 @@ import {
 import { formatNaira } from "@/lib/access";
 import { supabase } from "@/integrations/supabase/client";
 import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -161,28 +162,16 @@ function Dashboard() {
         .filter(
           (expense) =>
             expense.spent_on === today &&
-            expense.status !== "cancelled" &&
-            expense.status !== "rejected"
+            expense.status === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
-
-      const monthSales = sales
-        .filter(
-          (sale) =>
-            sale.sale_date >= monthStart &&
-            sale.sale_date <= today &&
-            sale.status !== "cancelled" &&
-            sale.status !== "void"
-        )
-        .reduce((sum, sale) => sum + number(sale.total_amount), 0);
 
       const monthIncome = income
         .filter(
           (item) =>
             item.received_on >= monthStart &&
             item.received_on <= today &&
-            item.status !== "cancelled" &&
-            item.status !== "rejected"
+            ["received", "approved"].includes(item.status)
         )
         .reduce((sum, item) => sum + number(item.amount), 0);
 
@@ -191,8 +180,7 @@ function Dashboard() {
           (expense) =>
             expense.spent_on >= monthStart &&
             expense.spent_on <= today &&
-            expense.status !== "cancelled" &&
-            expense.status !== "rejected"
+            expense.status === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
@@ -207,9 +195,9 @@ function Dashboard() {
         livestockValue: batchValue + animalValue,
         todaySales,
         todayExpenses,
-        monthlyRevenue: monthSales + monthIncome,
+        monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
-        estimatedProfit: monthSales + monthIncome - monthExpenses,
+        estimatedProfit: monthIncome - monthExpenses,
         livestockSummary,
         lowStock,
         recentSales: [...sales]
@@ -227,6 +215,10 @@ function Dashboard() {
   });
 
   const data = dashboardQuery.data;
+  const livestockChartData = (data?.livestockSummary ?? []).map((item) => ({
+    type: item.name,
+    quantity: item.quantity,
+  }));
 
   const stats = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
@@ -281,6 +273,49 @@ function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="mt-6 grid gap-6 xl:grid-cols-2">
+            <Panel title="Livestock distribution">
+              {livestockChartData.length ? (
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={livestockChartData} margin={{ top: 8, right: 12, left: 0, bottom: 24 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="type" tick={{ fontSize: 11 }} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="quantity" name="Animals / head count" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <p className="text-sm text-muted-foreground">Livestock charts will appear when livestock records exist.</p>}
+            </Panel>
+            <Panel title="This month's finance snapshot">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Revenue</p>
+                  <p className="mt-1 text-lg font-semibold">{data ? money(data.monthlyRevenue) : "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Expenses</p>
+                  <p className="mt-1 text-lg font-semibold">{data ? money(data.monthlyExpenses) : "—"}</p>
+                </div>
+              </div>
+              <div className="mt-4 h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[{ period: "Current month", revenue: data?.monthlyRevenue ?? 0, expenses: data?.monthlyExpenses ?? 0 }]} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
+                    <Tooltip formatter={(value) => money(Number(value ?? 0))} />
+                    <Legend />
+                    <Bar dataKey="revenue" name="Revenue" />
+                    <Bar dataKey="expenses" name="Expenses" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Panel>
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
