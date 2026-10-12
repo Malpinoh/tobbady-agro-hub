@@ -57,4 +57,28 @@ ON public.sales
 FOR EACH ROW
 EXECUTE FUNCTION public.sync_sale_payment_to_income();
 
+-- Backfill prior sales only when an equivalent invoice receipt is not already in the ledger.
+INSERT INTO public.income (
+  sale_id, category, amount, received_on, description, reference, recorded_by, status
+)
+SELECT
+  s.id,
+  'Livestock sales',
+  s.amount_paid,
+  s.sale_date,
+  'Payment received for invoice ' || s.invoice_number,
+  s.invoice_number,
+  s.sold_by,
+  'received'
+FROM public.sales s
+WHERE lower(COALESCE(s.status, '')) NOT IN ('cancelled', 'canceled', 'void', 'draft')
+  AND COALESCE(s.amount_paid, 0) > 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM public.income i
+    WHERE i.sale_id = s.id
+       OR (i.reference = s.invoice_number AND i.amount = s.amount_paid)
+  )
+ON CONFLICT (sale_id) WHERE sale_id IS NOT NULL DO NOTHING;
+
 REVOKE ALL ON FUNCTION public.sync_sale_payment_to_income() FROM PUBLIC;
