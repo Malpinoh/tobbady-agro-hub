@@ -2,6 +2,11 @@
 ALTER TABLE public.income
   ADD COLUMN IF NOT EXISTS sale_id uuid REFERENCES public.sales(id) ON DELETE SET NULL;
 
+-- Restore imports may insert income rows before sales rows in the same transaction.
+-- Defer this FK check until the sale row has been restored.
+ALTER TABLE public.income
+  ALTER CONSTRAINT income_sale_id_fkey DEFERRABLE INITIALLY DEFERRED;
+
 CREATE UNIQUE INDEX IF NOT EXISTS income_sale_id_unique
   ON public.income (sale_id)
   WHERE sale_id IS NOT NULL;
