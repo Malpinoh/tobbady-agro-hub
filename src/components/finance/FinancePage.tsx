@@ -532,7 +532,7 @@ const paidExpenses = expenses
                 </tr>
               ) : combinedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={canApprove ? 7 : 6} className="p-8 text-center">
+                  <td colSpan={canApprove ? 8 : 7} className="p-8 text-center">
                     <DollarSign className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                     <p className="font-medium">No finance records found</p>
                     <p className="mt-1 text-muted-foreground">
