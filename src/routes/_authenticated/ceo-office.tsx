@@ -92,16 +92,9 @@ function CEOOffice() {
         (s) => s.status !== "cancelled" && s.status !== "void"
       );
 
-      const validExpenses = expenses.filter(
-  (e) =>
-    e.payment_status === "paid" &&
-    e.status !== "cancelled" &&
-    e.status !== "rejected"
-);
+      const validExpenses = expenses.filter((e) => e.status === "approved");
 
-      const validIncome = income.filter(
-        (i) => i.status !== "cancelled" && i.status !== "rejected"
-      );
+      const validIncome = income.filter((i) => ["received", "approved"].includes(i.status));
 
       const activeBatches = batches.filter(
         (b) => b.status !== "sold" && b.status !== "inactive"
