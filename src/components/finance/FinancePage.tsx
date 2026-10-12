@@ -46,6 +46,7 @@ type IncomeRecord = {
   created_at: string;
   animal_id?: string | null;
   batch_id?: string | null;
+  sale_id?: string | null;
 };
 
 type ExpenseRecord = {
@@ -195,7 +196,7 @@ const paidExpenses = expenses
       description: record.description,
       date: record.received_on,
       reference: record.reference,
-      livestockLink: livestockLinkLabel(record.animal_id, record.batch_id),
+      livestockLink: record.sale_id ? `Sales invoice · ${record.reference || "linked"}` : livestockLinkLabel(record.animal_id, record.batch_id),
       status: record.status,
     }));
 
