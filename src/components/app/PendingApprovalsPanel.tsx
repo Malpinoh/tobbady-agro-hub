@@ -178,12 +178,14 @@ export function PendingApprovalsPanel() {
                   <p className="font-semibold">{row.label}</p>
                   <p className="text-sm text-muted-foreground">{row.detail}</p>
                   {row.kind === "change-request" && (
-                    <p className="mt-2 text-sm">
-                      <strong>Secretary's reason:</strong> {row.reason}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      <strong>Requested by:</strong> {row.requestedBy}
-                    </p>
+                    <>
+                      <p className="mt-2 text-sm">
+                        <strong>Secretary's reason:</strong> {row.reason}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        <strong>Requested by:</strong> {row.requestedBy}
+                      </p>
+                    </>
                   )}
                 </div>
                 <div className="flex shrink-0 gap-2">
