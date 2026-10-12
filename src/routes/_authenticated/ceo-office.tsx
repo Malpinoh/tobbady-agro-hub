@@ -160,7 +160,7 @@ function CEOOffice() {
         monthlyIncome,
         monthlyExpenses,
         estimatedProfit:
-          monthlySales + monthlyIncome - monthlyExpenses,
+          monthlyIncome - monthlyExpenses,
         lowStock,
         recentSales: [...validSales]
           .sort((a, b) => b.sale_date.localeCompare(a.sale_date))
