@@ -16,6 +16,7 @@ import {
   RequirePermission,
 } from "@/components/app/PageKit";
 import { Button } from "@/components/ui/button";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 type ReportTab = "profit" | "livestock" | "sales" | "activity";
 
@@ -262,6 +263,21 @@ export function ReportsPage() {
       ),
   }));
 
+  const financeChartData = [...new Set([
+    ...income.map((item) => item.category),
+    ...expenses.map((item) => item.category),
+  ])].map((category) => ({
+    category,
+    income: income.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    expenses: expenses.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
+  }));
+
+  const livestockChartData = livestockSummary.map((item) => ({
+    type: item.name,
+    individualAnimals: item.animals,
+    batchQuantity: item.batchQuantity,
+  }));
+
   const refresh = () => {
     window.location.reload();
   };
@@ -348,6 +364,24 @@ export function ReportsPage() {
                     value={formatNaira(totalIncome - totalExpenses)}
                   />
                 </div>
+                <div className="rounded-xl border p-4">
+                  <h2 className="mb-4 font-semibold">Income vs expenses by category</h2>
+                  {financeChartData.length ? (
+                    <div className="h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={financeChartData} margin={{ top: 8, right: 16, left: 8, bottom: 48 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="category" angle={-25} textAnchor="end" interval={0} height={64} tick={{ fontSize: 11 }} />
+                          <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
+                          <Tooltip formatter={(value) => formatNaira(Number(value ?? 0))} />
+                          <Legend />
+                          <Bar dataKey="income" name="Recognised income" />
+                          <Bar dataKey="expenses" name="Approved expenses" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : <p className="text-sm text-muted-foreground">No financial entries in this date range yet.</p>}
+                </div>
                 <div className="rounded-xl border">
                   <h2 className="border-b p-4 font-semibold">
                     Profit & Loss Breakdown
@@ -406,6 +440,24 @@ export function ReportsPage() {
                     title="Livestock Categories"
                     value={String(livestockTypes.length)}
                   />
+                </div>
+                <div className="rounded-xl border p-4">
+                  <h2 className="mb-4 font-semibold">Livestock distribution</h2>
+                  {livestockChartData.length ? (
+                    <div className="h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={livestockChartData} margin={{ top: 8, right: 16, left: 8, bottom: 24 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="type" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="individualAnimals" name="Individual records" />
+                          <Bar dataKey="batchQuantity" name="Animals in active batches" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : <p className="text-sm text-muted-foreground">No livestock categories to chart.</p>}
                 </div>
                 <div className="overflow-x-auto rounded-xl border">
                   <table className="w-full text-left text-sm">
