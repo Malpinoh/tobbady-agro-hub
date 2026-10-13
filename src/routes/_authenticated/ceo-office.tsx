@@ -111,13 +111,9 @@ function CEOOffice() {
         ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase())
       );
 
-      // Expenses are recognized when recorded unless rejected or voided.
-      // Approval state remains visible separately in the Finance workflow.
+      // Match Reports & Analytics: only approved expenses affect management P&L.
       const validExpenses = expenses.filter(
-        (expense) =>
-          !["rejected", "cancelled", "canceled", "void"].includes(
-            String(expense.status ?? "").toLowerCase(),
-          )
+        (expense) => String(expense.status ?? "").toLowerCase() === "approved"
       );
 
       const validIncome = income.filter(
