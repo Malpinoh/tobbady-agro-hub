@@ -61,6 +61,13 @@ type Sale = {
   created_at: string;
 };
 
+type SaleItemDraft = {
+  kind: "animal" | "batch";
+  record_id: string;
+  quantity: string;
+  unit_price: string;
+};
+
 type Section = "customers" | "invoices" | "payments" | "receipts";
 
 const money = (amount: number) => formatNaira(Number(amount) || 0);
@@ -79,6 +86,9 @@ function SalesContent() {
   const [receiptDialog, setReceiptDialog] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [saleItems, setSaleItems] = useState<SaleItemDraft[]>([
+    { kind: "animal", record_id: "", quantity: "1", unit_price: "" },
+  ]);
   const [customerForm, setCustomerForm] = useState({
     name: "",
     phone: "",
@@ -120,8 +130,57 @@ function SalesContent() {
     },
   });
 
+  const animalsQuery = useQuery({
+    queryKey: ["sales-available-animals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("animals")
+        .select("id, tag_number, livestock_type_id, acquisition_cost, status")
+        .eq("status", "active")
+        .order("tag_number");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const batchesQuery = useQuery({
+    queryKey: ["sales-available-batches"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("animal_batches")
+        .select("id, batch_code, livestock_type_id, current_quantity, initial_quantity, acquisition_cost, status")
+        .eq("status", "active")
+        .gt("current_quantity", 0)
+        .order("batch_code");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const livestockTypesQuery = useQuery({
+    queryKey: ["sales-livestock-types"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("livestock_types")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const customers = customersQuery.data ?? [];
   const sales = salesQuery.data ?? [];
+  const availableAnimals = animalsQuery.data ?? [];
+  const availableBatches = batchesQuery.data ?? [];
+  const livestockTypeNames = useMemo(
+    () => new Map((livestockTypesQuery.data ?? []).map((type) => [type.id, type.name])),
+    [livestockTypesQuery.data],
+  );
+  const saleItemTotal = saleItems.reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price) || 0),
+    0,
+  );
 
   const customerNames = useMemo(
     () => new Map(customers.map((customer) => [customer.id, customer.name])),
@@ -194,6 +253,7 @@ function SalesContent() {
       sale_date: new Date().toISOString().slice(0, 10),
       notes: "",
     });
+    setSaleItems([{ kind: "animal", record_id: "", quantity: "1", unit_price: "" }]);
     setSaleDialog(true);
   }
 
@@ -239,11 +299,35 @@ function SalesContent() {
       return;
     }
 
-    const total = Number(saleForm.total_amount);
+    if (saleItems.length === 0 || saleItems.some((item) => !item.record_id)) {
+      alert("Add a livestock item and select the animal or batch for every line.");
+      return;
+    }
+
+    if (saleItems.some((item) => {
+      const quantity = Number(item.quantity);
+      const unitPrice = Number(item.unit_price);
+      return (
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        (item.kind === "animal" && quantity !== 1) ||
+        (item.kind === "batch" && !Number.isInteger(quantity)) ||
+        !Number.isFinite(unitPrice) ||
+        unitPrice < 0
+      );
+    })) {
+      alert("Check each item quantity and unit price. Batch quantities must be whole numbers.");
+      return;
+    }
+
+    const total = saleItems.reduce(
+      (sum, item) => sum + Number(item.quantity) * Number(item.unit_price),
+      0,
+    );
     const paid = Number(saleForm.amount_paid || 0);
 
     if (!Number.isFinite(total) || total <= 0) {
-      alert("Enter a sale amount greater than zero.");
+      alert("The livestock items must have a total sale value greater than zero.");
       return;
     }
 
@@ -259,26 +343,30 @@ function SalesContent() {
 
     setSaving(true);
     try {
-      const invoiceNumber = `TAL-${Date.now().toString().slice(-9)}`;
-      const paymentStatus =
-        paid >= total ? "paid" : paid > 0 ? "partial" : "unpaid";
-
-      const { error } = await supabase.from("sales").insert({
-        invoice_number: invoiceNumber,
-        customer_id: saleForm.customer_id || null,
-        sale_date: saleForm.sale_date,
-        total_amount: total,
-        amount_paid: paid,
-        payment_status: paymentStatus,
-        status: "completed",
-        notes: saleForm.notes.trim() || null,
-        sold_by: user?.id ?? null,
+      const { error } = await supabase.rpc("create_livestock_sale", {
+        p_customer_id: saleForm.customer_id || null,
+        p_sale_date: saleForm.sale_date,
+        p_amount_paid: paid,
+        p_notes: saleForm.notes.trim() || null,
+        p_items: saleItems.map((item) => ({
+          kind: item.kind,
+          record_id: item.record_id,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+        })),
       });
 
       if (error) throw error;
 
       setSaleDialog(false);
+      setSaleItems([{ kind: "animal", record_id: "", quantity: "1", unit_price: "" }]);
       await refreshData();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["sales-available-animals"] }),
+        queryClient.invalidateQueries({ queryKey: ["sales-available-batches"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-sales"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-animals"] }),
+      ]);
     } catch (error) {
       alert(
         error instanceof Error
@@ -615,12 +703,11 @@ function SalesContent() {
         </Dialog>
 
         <Dialog open={saleDialog} onOpenChange={setSaleDialog}>
-          <DialogContent>
+          <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create Sales Invoice</DialogTitle>
               <DialogDescription>
-                Record one sale total. Itemized products can be added when the
-                invoice-items database is available.
+                Select the actual animal or batch being sold. Saving the invoice records the sale and reduces available livestock stock automatically.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -647,56 +734,140 @@ function SalesContent() {
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Total sale amount (₦) *">
-                <Input
-                  type="number"
-                  min="1"
-                  value={saleForm.total_amount}
-                  onChange={(e) =>
-                    setSaleForm({
-                      ...saleForm,
-                      total_amount: e.target.value,
-                    })
-                  }
-                />
-              </FormField>
-              <FormField label="Initial payment (₦)">
+
+              <div className="space-y-3 rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">Livestock sold</h3>
+                    <p className="text-xs text-muted-foreground">Individual animals are sold one at a time; batches allow whole-number quantities.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSaleItems((items) => [...items, { kind: "animal", record_id: "", quantity: "1", unit_price: "" }])}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Add item
+                  </Button>
+                </div>
+
+                {saleItems.map((item, itemIndex) => {
+                  const selectedBatch = availableBatches.find((batch) => batch.id === item.record_id);
+                  const selectedAnimal = availableAnimals.find((animal) => animal.id === item.record_id);
+                  return (
+                    <div key={itemIndex} className="grid gap-3 rounded-md bg-muted/30 p-3 md:grid-cols-2">
+                      <FormField label="Livestock record type">
+                        <Select
+                          value={item.kind}
+                          onValueChange={(value: "animal" | "batch") =>
+                            setSaleItems((items) => items.map((current, index) => index === itemIndex
+                              ? { ...current, kind: value, record_id: "", quantity: value === "animal" ? "1" : "" }
+                              : current))
+                          }
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="animal">Individual animal</SelectItem>
+                            <SelectItem value="batch">Batch / group</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormField>
+
+                      <FormField label={item.kind === "animal" ? "Select animal *" : "Select batch *"}>
+                        <Select
+                          value={item.record_id || "none"}
+                          onValueChange={(value) => setSaleItems((items) => items.map((current, index) => index === itemIndex ? { ...current, record_id: value === "none" ? "" : value } : current))}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Choose livestock" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Choose livestock...</SelectItem>
+                            {item.kind === "animal" ? availableAnimals.map((animal) => (
+                              <SelectItem key={animal.id} value={animal.id}>
+                                {animal.tag_number} · {livestockTypeNames.get(animal.livestock_type_id) ?? "Livestock"}
+                              </SelectItem>
+                            )) : availableBatches.map((batch) => (
+                              <SelectItem key={batch.id} value={batch.id}>
+                                {batch.batch_code} · {livestockTypeNames.get(batch.livestock_type_id) ?? "Livestock"} · {batch.current_quantity} available
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormField>
+
+                      <FormField label={item.kind === "animal" ? "Quantity" : "Quantity to sell *"}>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={item.kind === "batch" ? selectedBatch?.current_quantity : 1}
+                          step="1"
+                          value={item.quantity}
+                          disabled={item.kind === "animal"}
+                          onChange={(event) => setSaleItems((items) => items.map((current, index) => index === itemIndex ? { ...current, quantity: event.target.value } : current))}
+                        />
+                      </FormField>
+
+                      <FormField label="Unit sale price (₦) *">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unit_price}
+                          onChange={(event) => setSaleItems((items) => items.map((current, index) => index === itemIndex ? { ...current, unit_price: event.target.value } : current))}
+                          placeholder="Enter price per animal/bird/fish"
+                        />
+                      </FormField>
+
+                      <div className="flex items-center justify-between gap-2 md:col-span-2">
+                        <span className="text-sm text-muted-foreground">
+                          Line total: <strong className="text-foreground">{money((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}</strong>
+                          {item.kind === "animal" && selectedAnimal ? <span> · {selectedAnimal.tag_number}</span> : null}
+                        </span>
+                        {saleItems.length > 1 && (
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setSaleItems((items) => items.filter((_, index) => index !== itemIndex))}>
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between border-t pt-3">
+                  <span className="font-semibold">Invoice total</span>
+                  <span className="text-lg font-bold">{money(saleItemTotal)}</span>
+                </div>
+                {animalsQuery.isError || batchesQuery.isError ? (
+                  <p className="text-sm text-destructive">Could not load available livestock. Refresh and try again.</p>
+                ) : null}
+              </div>
+
+              <FormField label="Initial payment received (₦)">
                 <Input
                   type="number"
                   min="0"
+                  max={saleItemTotal}
+                  step="0.01"
                   value={saleForm.amount_paid}
-                  onChange={(e) =>
-                    setSaleForm({
-                      ...saleForm,
-                      amount_paid: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setSaleForm({ ...saleForm, amount_paid: e.target.value })}
                 />
               </FormField>
               <FormField label="Sale date *">
                 <Input
                   type="date"
                   value={saleForm.sale_date}
-                  onChange={(e) =>
-                    setSaleForm({ ...saleForm, sale_date: e.target.value })
-                  }
+                  onChange={(e) => setSaleForm({ ...saleForm, sale_date: e.target.value })}
                 />
               </FormField>
               <FormField label="Notes">
                 <Textarea
                   value={saleForm.notes}
-                  onChange={(e) =>
-                    setSaleForm({ ...saleForm, notes: e.target.value })
-                  }
-                  placeholder="Livestock type, quantity or other details"
+                  onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })}
+                  placeholder="Optional notes for this invoice"
                 />
               </FormField>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSaleDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={saveSale} disabled={saving}>
+              <Button variant="outline" onClick={() => setSaleDialog(false)}>Cancel</Button>
+              <Button onClick={saveSale} disabled={saving || saleItems.length === 0 || saleItemTotal <= 0}>
                 {saving ? "Saving..." : "Create Invoice"}
               </Button>
             </DialogFooter>
