@@ -71,18 +71,22 @@ function Dashboard() {
       ]);
 
       const results = [
-        batchesResult,
-        typesResult,
-        animalsResult,
-        salesResult,
-        expensesResult,
-        incomeResult,
-        inventoryResult,
-        saleItemsResult,
-      ];
+        ["livestock batches", batchesResult],
+        ["livestock types", typesResult],
+        ["individual animals", animalsResult],
+        ["sales", salesResult],
+        ["expenses", expensesResult],
+        ["income ledger", incomeResult],
+        ["inventory", inventoryResult],
+        ["sale item costs", saleItemsResult],
+      ] as const;
 
-      for (const result of results) {
-        if (result.error) throw result.error;
+      for (const [source, result] of results) {
+        if (result.error) {
+          throw new Error(
+            `Dashboard could not load ${source}: ${result.error.message}${result.error.code ? ` (code ${result.error.code})` : ""}`,
+          );
+        }
       }
 
       const batches = batchesResult.data ?? [];
@@ -252,7 +256,9 @@ function Dashboard() {
         <div className="rounded-xl border border-destructive p-5">
           <p className="font-semibold">Unable to load dashboard data</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Check your Supabase connection, database tables, and permissions.
+            {dashboardQuery.error instanceof Error
+              ? dashboardQuery.error.message
+              : "Check your Supabase connection, database tables, and permissions."}
           </p>
           <button
             type="button"
