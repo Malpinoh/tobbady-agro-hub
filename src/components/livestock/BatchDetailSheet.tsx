@@ -409,9 +409,12 @@ function BatchActionDialog({
             : "Batch transfer recorded",
       );
 
-      void qc.invalidateQueries({
-        queryKey: livestockKeys.all,
-      });
+      void Promise.all([
+        qc.invalidateQueries({ queryKey: livestockKeys.all }),
+        qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        qc.invalidateQueries({ queryKey: ["reports-batches"] }),
+        qc.invalidateQueries({ queryKey: ["reports-sales"] }),
+      ]);
 
       onClose();
       setQuantity("");
