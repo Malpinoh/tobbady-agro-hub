@@ -53,7 +53,7 @@ export function PlatformTour({ onOpenNavigation }: { onOpenNavigation?: () => vo
     if (!open) return;
     const candidates = Array.from(document.querySelectorAll(`[data-tour="${step.target}"]`));
     let target = candidates.find(isVisible) ?? null;
-    if (!target && step.target.startsWith("nav-")) {
+    if (!target && step.target.startsWith("nav-") && window.innerWidth < 1024) {
       onOpenNavigation?.();
       // On small screens the sidebar lives in a sheet; wait for it to mount,
       // then measure the real link instead of highlighting a guessed point.
