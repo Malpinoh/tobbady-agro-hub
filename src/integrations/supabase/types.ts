@@ -1427,6 +1427,7 @@ export type Database = {
         Args: { p_rows: Json; p_skip_columns?: string[]; p_table: string }
         Returns: undefined
       }
+      checkout_secretary_visitor: { Args: { p_visitor_id: string }; Returns: undefined }
       create_platform_backup: { Args: { p_reason?: string }; Returns: string }
       create_livestock_sale: {
         Args: {
