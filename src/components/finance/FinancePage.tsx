@@ -459,14 +459,14 @@ const paidExpenses = expenses
 
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Approved expenses</span>
+            <span className="text-sm">Approved expense records</span>
             <ArrowDownCircle className="h-5 w-5" />
           </div>
           <div className="mt-3 text-2xl font-semibold">
             {formatNaira(approvedExpenses)}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Approved for reporting; payment may still be outstanding
+            Includes operating expenses and livestock purchases; Reports separates livestock acquisition costs
           </p>
         </div>
 
