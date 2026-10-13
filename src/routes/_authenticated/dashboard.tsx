@@ -8,7 +8,6 @@ import {
   RequirePermission,
 } from "@/components/app/PageKit";
 import { formatNaira } from "@/lib/access";
-import { getLocalDateInputValue } from "@/lib/date-time";
 import { supabase } from "@/integrations/supabase/client";
 import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
