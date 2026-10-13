@@ -52,6 +52,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
             {g === "Offices" && isExecutive && can("secretary.view") && (
               <button
                 type="button"
+                data-tour="nav-secretary-office"
                 onClick={() => setShowSecretaryOffice((shown) => !shown)}
                 aria-expanded={showSecretaryOffice}
                 className="mt-2 w-full rounded-md px-3 py-2 text-left text-xs font-medium text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
