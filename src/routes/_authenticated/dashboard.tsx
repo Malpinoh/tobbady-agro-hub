@@ -62,7 +62,7 @@ function Dashboard() {
           .select("id, spent_on, amount, status"),
         supabase
           .from("income")
-          .select("id, received_on, amount, status"),
+          .select("id, sale_id, category, received_on, amount, status"),
         supabase
           .from("inventory_items")
           .select("id, name, quantity_on_hand, reorder_level, unit")
@@ -90,7 +90,7 @@ function Dashboard() {
       const animals = animalsResult.data ?? [];
       const activeAnimals = animals.filter(
         (animal) =>
-          !["sold", "inactive", "deceased", "dead"].includes(
+          !["sold", "inactive", "deceased", "dead", "disposed"].includes(
             String(animal.status ?? "active").toLowerCase(),
           ),
       );
@@ -168,6 +168,8 @@ function Dashboard() {
       const monthOtherIncome = income
         .filter(
           (item) =>
+            !item.sale_id &&
+            String(item.category ?? "").trim().toLowerCase() !== "livestock sales" &&
             item.received_on >= monthStart &&
             item.received_on <= today &&
             ["received", "approved"].includes(String(item.status ?? "").toLowerCase())

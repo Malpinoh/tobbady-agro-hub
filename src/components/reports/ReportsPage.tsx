@@ -93,7 +93,7 @@ export function ReportsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("income")
-        .select("id, amount, category, received_on, status");
+        .select("id, sale_id, amount, category, received_on, status");
       if (error) throw error;
       return data ?? [];
     },
@@ -211,6 +211,8 @@ export function ReportsPage() {
 
   const income = (incomeQuery.data ?? []).filter(
     (item) =>
+      !item.sale_id &&
+      String(item.category ?? "").trim().toLowerCase() !== "livestock sales" &&
       inPeriod(item.received_on) &&
       ["received", "approved"].includes(String(item.status ?? "").toLowerCase()),
   );
@@ -233,7 +235,7 @@ export function ReportsPage() {
   const sales = (salesQuery.data ?? []).filter(
     (item) =>
       inPeriod(item.sale_date) &&
-      ["completed", "approved"].includes(item.status.toLowerCase()),
+      ["completed", "approved"].includes(String(item.status ?? "").toLowerCase()),
   );
 
   const totalSales = sales.reduce(
