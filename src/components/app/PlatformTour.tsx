@@ -55,6 +55,18 @@ export function PlatformTour({ onOpenNavigation }: { onOpenNavigation?: () => vo
     let target = candidates.find(isVisible) ?? null;
     if (!target && step.target.startsWith("nav-")) {
       onOpenNavigation?.();
+      // On small screens the sidebar lives in a sheet; wait for it to mount,
+      // then measure the real link instead of highlighting a guessed point.
+      window.setTimeout(() => {
+        const selector = `[data-tour="${step.target}"]`;
+        const refreshed = Array.from(document.querySelectorAll(selector)).find(isVisible);
+        if (!refreshed) return;
+        refreshed.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+        const r = refreshed.getBoundingClientRect();
+        const pad = 7;
+        setRect({ x: Math.max(6, r.left - pad), y: Math.max(6, r.top - pad), width: Math.min(window.innerWidth - 12, r.width + pad * 2), height: Math.min(window.innerHeight - 12, r.height + pad * 2) });
+        setViewport({ width: window.innerWidth, height: window.innerHeight });
+      }, 220);
       return;
     }
     if (!target) target = document.querySelector("[data-tour='tour-main']") as HTMLElement | null;
