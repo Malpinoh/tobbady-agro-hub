@@ -8,6 +8,7 @@ import {
   RequirePermission,
 } from "@/components/app/PageKit";
 import { formatNaira } from "@/lib/access";
+import { getLocalDateInputValue } from "@/lib/date-time";
 import { supabase } from "@/integrations/supabase/client";
 import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -212,6 +213,7 @@ function Dashboard() {
         todayExpenses,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
+        monthlyCostOfGoodsSold: monthCostOfGoodsSold,
         estimatedProfit: monthIncome - monthExpenses - monthCostOfGoodsSold,
         livestockSummary,
         lowStock,
@@ -235,11 +237,12 @@ function Dashboard() {
   const stats = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
     ["Estimated Livestock Value", data ? money(data.livestockValue) : "—"],
-    ["Today's Sales", data ? money(data.todaySales) : "—"],
+    ["Today's Sales Revenue", data ? money(data.todaySales) : "—"],
     ["Today's Expenses", data ? money(data.todayExpenses) : "—"],
     ["Monthly Revenue", data ? money(data.monthlyRevenue) : "—"],
+    ["Cost of Livestock Sold", data ? money(data.monthlyCostOfGoodsSold) : "—"],
     ["Monthly Expenses", data ? money(data.monthlyExpenses) : "—"],
-    ["Estimated Profit", data ? money(data.estimatedProfit) : "—"],
+    ["Estimated Profit / Loss", data ? money(data.estimatedProfit) : "—"],
   ];
 
   return (
@@ -312,20 +315,29 @@ function Dashboard() {
                   <p className="mt-1 text-lg font-semibold text-green-700">{data ? money(data.monthlyRevenue) : "—"}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Expenses</p>
+                  <p className="text-xs text-muted-foreground">Approved Operating Expenses</p>
                   <p className="mt-1 text-lg font-semibold text-red-600">{data ? money(data.monthlyExpenses) : "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Cost of Livestock Sold</p>
+                  <p className="mt-1 text-lg font-semibold text-amber-700">{data ? money(data.monthlyCostOfGoodsSold) : "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Estimated Profit / Loss</p>
+                  <p className={`mt-1 text-lg font-semibold ${data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700"}`}>{data ? money(data.estimatedProfit) : "—"}</p>
                 </div>
               </div>
               <div className="mt-4 h-52 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[{ period: "Current month", revenue: data?.monthlyRevenue ?? 0, expenses: data?.monthlyExpenses ?? 0 }]} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                  <BarChart data={[{ period: "Current month", revenue: data?.monthlyRevenue ?? 0, expenses: data?.monthlyExpenses ?? 0, costOfGoodsSold: data?.monthlyCostOfGoodsSold ?? 0 }]} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
                     <Tooltip formatter={(value) => money(Number(value ?? 0))} />
                     <Legend />
                     <Bar dataKey="revenue" name="Revenue" fill="#16a34a" />
-                    <Bar dataKey="expenses" name="Expenses" fill="#dc2626" />
+                    <Bar dataKey="expenses" name="Approved operating expenses" fill="#dc2626" />
+                    <Bar dataKey="costOfGoodsSold" name="Cost of livestock sold" fill="#d97706" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -433,7 +445,7 @@ function Dashboard() {
                 Dashboard data loaded from Supabase.
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Revenue includes recognised sales and received income. Estimated profit subtracts approved expenses and the recorded cost of livestock sold.
+                Sales revenue is the full value of completed invoices; cash received is tracked separately in Sales and Finance. Estimated profit/loss = sales revenue + other recognised income − approved expenses − cost of livestock sold.
               </p>
             </Panel>
           </div>
