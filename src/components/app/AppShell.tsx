@@ -9,7 +9,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
 import { Brand } from "./Brand";
 import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
 import { ROLE_LABELS } from "@/lib/access";
@@ -94,8 +93,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", replace: true });
   }
 
-  const currentTourStep = TOUR_STEPS[tourStep];
-
   return (
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 lg:block"><SidebarBody /></aside>
@@ -107,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-card/90 px-4 backdrop-blur md:px-8">
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu" data-tour="tour-mobile-menu">
             <Menu className="h-5 w-5" />
           </Button>
           <div className="font-display text-sm font-bold tracking-wide text-primary lg:hidden">TOBADDY AGRO</div>
