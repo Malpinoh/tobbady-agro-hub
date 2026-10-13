@@ -65,9 +65,10 @@ function CEOOffice() {
         supabase.from("income").select(
           "id, sale_id, category, received_on, amount, status"
         ),
-        supabase.from("inventory_items").select(
-          "id, name, quantity_on_hand, reorder_level"
-        ),
+        supabase
+          .from("inventory_items")
+          .select("id, name, quantity_on_hand, reorder_level")
+          .eq("approval_status", "approved"),
         supabase.from("sale_items").select("sale_id, cost_total"),
       ]);
 
