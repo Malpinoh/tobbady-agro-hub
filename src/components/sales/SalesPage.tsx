@@ -233,7 +233,13 @@ function SalesContent() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: ["sales-customers"] }),
       queryClient.invalidateQueries({ queryKey: ["sales-records"] }),
+      queryClient.invalidateQueries({ queryKey: ["sales-available-animals"] }),
+      queryClient.invalidateQueries({ queryKey: ["sales-available-batches"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
       queryClient.invalidateQueries({ queryKey: ["reports-sales"] }),
+      queryClient.invalidateQueries({ queryKey: ["reports-sale-items"] }),
+      queryClient.invalidateQueries({ queryKey: ["reports-animals"] }),
+      queryClient.invalidateQueries({ queryKey: ["reports-batches"] }),
     ]);
   }
 
