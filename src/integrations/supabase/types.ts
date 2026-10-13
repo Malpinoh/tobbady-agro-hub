@@ -1483,6 +1483,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_procurement_receipt: {
+        Args: {
+          p_item_id: string
+          p_notes?: string
+          p_quantity: number
+          p_reference?: string
+          p_supplier_id?: string | null
+          p_unit_cost?: number | null
+        }
+        Returns: undefined
+      }
       reset_test_data: { Args: never; Returns: undefined }
       restore_platform_backup: {
         Args: { p_backup_id: string }
