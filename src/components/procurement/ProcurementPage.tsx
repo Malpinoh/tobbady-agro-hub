@@ -200,7 +200,11 @@ function ProcurementContent() {
     );
   });
 
-  const filteredTransactions = transactions.filter((transaction) => {
+  const receivedTransactions = transactions.filter(
+    (transaction) => String(transaction.transaction_type ?? "").toLowerCase() === "received",
+  );
+
+  const filteredTransactions = receivedTransactions.filter((transaction) => {
     const term = search.trim().toLowerCase();
     return (
       !term ||
@@ -464,7 +468,7 @@ function ProcurementContent() {
             )}
             icon={ShoppingCart}
           />
-          <SummaryCard title="Goods Received Records" value={String(transactions.length)} icon={PackageCheck} />
+          <SummaryCard title="Goods Received Records" value={String(receivedTransactions.length)} icon={PackageCheck} />
         </div>
 
         <div className="flex flex-wrap gap-2 border-b pb-3">
@@ -676,7 +680,7 @@ function ProcurementContent() {
                       </tr>
                     ))}
                     {filteredTransactions.length === 0 && (
-                      <EmptyRow columns={7} message="No inventory transactions found." />
+                      <EmptyRow columns={7} message="No goods received records found." />
                     )}
                   </tbody>
                 </table>
