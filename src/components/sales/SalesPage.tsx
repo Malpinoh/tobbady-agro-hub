@@ -492,7 +492,7 @@ function SalesContent() {
       <div className="space-y-6">
         <PageHeader
           title="Sales & Customers"
-          description="Manage customers, sales invoices, payments and receipts."
+          description="Invoice totals show sales revenue; payments received show cash collected; outstanding balances are still owed by customers."
           actions={
             <Button
               variant="outline"
