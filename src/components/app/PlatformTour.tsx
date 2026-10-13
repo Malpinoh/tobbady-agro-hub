@@ -119,26 +119,32 @@ export function PlatformTour({ onOpenNavigation }: { onOpenNavigation?: () => vo
     return () => window.removeEventListener("tobbady:replay-tour", handler);
   }, [replay]);
 
-  const tooltipStyle = useMemo(() => {
-    if (!rect || !viewport.width) return { left: "50%", top: "50%", transform: "translate(-50%, -50%)" } as const;
-    const width = Math.min(390, viewport.width - 32);
-    const left = Math.max(16, Math.min(viewport.width - width - 16, rect.x + rect.width / 2 - width / 2));
-    const spaceBelow = viewport.height - (rect.y + rect.height);
-    const top = spaceBelow > 300 || rect.y < 250 ? Math.min(viewport.height - 270, rect.y + rect.height + 14) : Math.max(16, rect.y - 280);
-    return { left, top, width } as const;
-  }, [rect, viewport]);
+  // Keep the controls in a predictable, reachable dock instead of positioning
+  // them from a guessed tooltip height (which could push buttons off-screen).
+  // The highlighted target remains visible above/behind the dock.
+  const tooltipStyle = useMemo(() => ({
+    position: "fixed" as const,
+    left: "50%",
+    bottom: "max(12px, env(safe-area-inset-bottom))",
+    transform: "translateX(-50%)",
+    width: "min(420px, calc(100vw - 24px))",
+    maxHeight: "min(560px, calc(100dvh - 24px))",
+    overflowY: "auto" as const,
+    overscrollBehavior: "contain" as const,
+    zIndex: 110,
+  }), []);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100]">
+    <div className="pointer-events-none fixed inset-0 z-[100]">
       <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
         <defs><mask id="tobbady-tour-mask"><rect width="100%" height="100%" fill="white" />{rect && <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx="12" fill="black" />}</mask></defs>
         <rect width="100%" height="100%" fill="rgba(8, 18, 12, .72)" mask="url(#tobbady-tour-mask)" />
         {rect && <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx="12" fill="none" stroke="hsl(var(--primary))" strokeWidth="3" />}
       </svg>
       {rect && <div className="pointer-events-none absolute rounded-xl ring-4 ring-primary/20" style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }} />}
-      <section role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" className="absolute rounded-2xl border bg-card p-5 text-card-foreground shadow-2xl" style={tooltipStyle}>
+      <section role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" className="pointer-events-auto fixed rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl sm:p-5" style={tooltipStyle}>
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.16em] text-primary"><Compass className="h-4 w-4" />{step.eyebrow}</div>
           <button type="button" onClick={finish} aria-label="Close tour" className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><X className="h-4 w-4" /></button>
