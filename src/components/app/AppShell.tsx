@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { Bell, BookOpen, LogOut, Menu } from "lucide-react";
+import { PlatformTour } from "./PlatformTour";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -9,21 +10,11 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { Brand } from "./Brand";
 import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
 import { ROLE_LABELS } from "@/lib/access";
 import { useAuth } from "@/hooks/use-auth";
 
-const TOUR_KEY = "tobbady-platform-tour-dismissed-v1";
-const TOUR_STEPS = [
-  { title: "Welcome to TOBADDY AGRO LIVESTOCK", body: "This system connects farm operations, livestock, inventory, procurement, sales, finance and management reporting. The figures should agree because they describe the same farm activity." },
-  { title: "Start with Farm Operations and Livestock", body: "Keep the farm profile and livestock setup accurate. Register individual animals or batches, maintain their current status and quantity, and use the correct farm or open-compound location." },
-  { title: "Record purchases and stock movements", body: "Use Suppliers & Procurement to record purchases and confirm goods received. Use Inventory for feed, medicine and supplies. Receive or issue stock once only; rejected or cancelled transactions should not increase stock." },
-  { title: "Record sales and expenses in the right place", body: "Record animal sales in Sales & Customers, not as a second manual income entry. Record expenses in Finance and follow the approval and payment statuses. Partial customer payments are not the same as the full sale value." },
-  { title: "Use reports and offices to monitor the farm", body: "Dashboard is the quick overview; Reports & Analytics is for date-based review; CEO Office is for oversight; Secretary Office supports records and follow-ups. Use the Operations Guide for role-specific responsibilities. You can reopen this tour from your profile menu." },
-];
 
 function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const { can, hasRole } = useAuth();
@@ -47,6 +38,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
                 <li key={i.to}>
                   <Link
                     to={i.to}
+                    data-tour={`nav-${i.to === "/livestock-config" ? "livestock-setup" : i.to.slice(1)}`}
                     onClick={onNavigate}
                     className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/85 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     activeProps={{ className: "bg-sidebar-accent !text-sidebar-accent-foreground font-medium shadow-[inset_3px_0_0_var(--sidebar-primary)]" }}
@@ -86,31 +78,13 @@ function SidebarBody({ onNavigate }: { onNavigate?: (() => void) | undefined }) 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
-  const [tourStep, setTourStep] = useState(0);
   const { profile, user, roles, signOut } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const name = profile?.full_name || user?.email || "User";
   const initials = name.split(/[\s@]/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
 
-  useEffect(() => {
-    try {
-      if (!window.localStorage.getItem(TOUR_KEY)) setTourOpen(true);
-    } catch {
-      // The tour still works when browser storage is unavailable.
-    }
-  }, []);
-
-  function dismissTour() {
-    setTourOpen(false);
-    try { window.localStorage.setItem(TOUR_KEY, "dismissed"); } catch { /* optional preference */ }
-  }
-
-  function replayTour() {
-    setTourStep(0);
-    setTourOpen(true);
-  }
+  const openNavigation = useCallback(() => setOpen(true), []);
 
   async function handleSignOut() {
     await qc.cancelQueries();
@@ -138,10 +112,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="font-display text-sm font-bold tracking-wide text-primary lg:hidden">TOBADDY AGRO</div>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild aria-label="Notifications">
-              <Link to="/notifications"><Bell className="h-5 w-5" /></Link>
+              <Link to="/notifications" data-tour="nav-notifications"><Bell className="h-5 w-5" /></Link>
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-muted">
+              <DropdownMenuTrigger data-tour="tour-profile" className="flex items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-muted">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials}</span>
                 <span className="hidden text-left sm:block">
                   <span className="block text-sm font-medium leading-tight">{name}</span>
@@ -159,27 +133,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+        <main data-tour="tour-main" className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
 
-      <Dialog open={tourOpen} onOpenChange={(shown) => { if (!shown) dismissTour(); else setTourOpen(true); }}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary"><BookOpen className="h-4 w-4" /> Website guide · Step {tourStep + 1} of {TOUR_STEPS.length}</div>
-            <DialogTitle className="text-xl">{currentTourStep.title}</DialogTitle>
-            <DialogDescription className="leading-6">{currentTourStep.body}</DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-1.5" aria-label="Tour progress">
-            {TOUR_STEPS.map((step, index) => <div key={step.title} className={`h-1.5 flex-1 rounded-full ${index <= tourStep ? "bg-primary" : "bg-muted"}`} />)}
-          </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
-            <Button variant="ghost" onClick={dismissTour}>Skip tour</Button>
-            <Button onClick={() => tourStep === TOUR_STEPS.length - 1 ? dismissTour() : setTourStep((step) => step + 1)}>
-              {tourStep === TOUR_STEPS.length - 1 ? "Finish tour" : "Next"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PlatformTour onOpenNavigation={openNavigation} />
     </div>
   );
 }
