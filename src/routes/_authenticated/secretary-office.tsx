@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Mail, Users, RefreshCw, Plus, CheckCircle2, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
+import { formatFarmDateTime } from "@/lib/date-time";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -168,7 +169,7 @@ function SecretaryOffice() {
   }
   async function checkoutVisitor(id: string) {
     await finishWrite(async () => {
-      const { error } = await supabase.from("secretary_visitors").update({ departed_at: new Date().toISOString() }).eq("id", id).is("departed_at", null);
+      const { error } = await supabase.rpc("checkout_secretary_visitor", { p_visitor_id: id });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["secretary-office", "visitors"] });
     }, "Visitor checked out.");
@@ -278,7 +279,8 @@ function SecretaryOffice() {
           <Panel title="Visitor log">
             {loading ? <Loading /> : visitors.length === 0 ? <Empty text="No visitors recorded yet." /> :
               <div className="space-y-3">{visitors.map((item) => <article key={item.id} className="rounded-lg border p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{item.visitor_name}</h3><p className="mt-1 text-sm text-muted-foreground">{item.organization || "No organization"} · Arrived {format(new Date(item.arrived_at), "d MMM yyyy, HH:mm")}</p><p className="mt-1 text-sm"><strong>Purpose:</strong> {item.purpose}</p>{item.person_to_visit && <p className="mt-1 text-sm"><strong>Meeting with:</strong> {item.person_to_visit}</p>}</div><StatusBadge tone={item.departed_at ? "neutral" : "info"}>{item.departed_at ? "Checked out" : "On site"}</StatusBadge></div>
+                <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{item.visitor_name}</h3><p className="mt-1 text-sm text-muted-foreground">{item.organization || "No organization"} · Arrived {formatFarmDateTime(item.arrived_at)}</p>{item.departed_at && <p className="mt-1 text-sm text-muted-foreground">Checked out: {formatFarmDateTime(item.departed_at)}</p>}
+                <p className="mt-1 text-sm"><strong>Purpose:</strong> {item.purpose}</p>{item.person_to_visit && <p className="mt-1 text-sm"><strong>Meeting with:</strong> {item.person_to_visit}</p>}</div><StatusBadge tone={item.departed_at ? "neutral" : "info"}>{item.departed_at ? "Checked out" : "On site"}</StatusBadge></div>
                 {canManage && !item.departed_at && <Button className="mt-3" size="sm" variant="outline" disabled={saving} onClick={() => void checkoutVisitor(item.id)}>Check visitor out</Button>}
               </article>)}</div>}
           </Panel>
