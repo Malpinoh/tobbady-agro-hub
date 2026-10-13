@@ -199,6 +199,7 @@ export function ReportsPage() {
     incomeQuery,
     expensesQuery,
     salesQuery,
+    saleItemsQuery,
     animalsQuery,
     batchesQuery,
     typesQuery,
@@ -232,9 +233,7 @@ export function ReportsPage() {
   const sales = (salesQuery.data ?? []).filter(
     (item) =>
       inPeriod(item.sale_date) &&
-      !["cancelled", "canceled", "void"].includes(
-        item.status.toLowerCase(),
-      ),
+      ["completed", "approved"].includes(item.status.toLowerCase()),
   );
 
   const totalSales = sales.reduce(
