@@ -95,7 +95,7 @@ function FinanceContent() {
   const canApprove = can("finance.approve") || can("settings.manage");
 
   const [search, setSearch] = useState("");
-  const [recordType, setRecordType] = useState<"income" | "expense">("income");
+  const [recordType, setRecordType] = useState<"income" | "expense">("expense");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -103,7 +103,7 @@ function FinanceContent() {
 
   const [form, setForm] = useState({
     amount: "",
-    category: "Livestock sales",
+    category: "Animal feed",
     description: "",
     date: new Date().toISOString().slice(0, 10),
     reference: "",
@@ -121,6 +121,7 @@ function FinanceContent() {
       if (error) throw error;
       return (data ?? []) as IncomeRecord[];
     },
+    refetchInterval: 30_000,
   });
 
   const expensesQuery = useQuery({
@@ -134,6 +135,7 @@ function FinanceContent() {
       if (error) throw error;
       return (data ?? []) as ExpenseRecord[];
     },
+    refetchInterval: 30_000,
   });
 
   const animalLinkQuery = useQuery({
@@ -166,7 +168,19 @@ function FinanceContent() {
         : "General farm operation";
 
   const totalIncome = incomes
-    .filter((record) => record.status === "received" || record.status === "approved")
+    .filter(
+      (record) =>
+        (record.status === "received" || record.status === "approved") &&
+        // Sales income is counted only from the linked automatic ledger entry.
+        // Legacy unlinked "Livestock sales" rows are left visible for audit but
+        // excluded from totals so they cannot double-count a recorded sale.
+        (Boolean(record.sale_id) ||
+          record.category.trim().toLowerCase() !== "livestock sales"),
+    )
+    .reduce((sum, record) => sum + Number(record.amount), 0);
+
+  const recordedExpenses = expenses
+    .filter((record) => !["rejected", "cancelled", "canceled", "void"].includes(record.status.toLowerCase()))
     .reduce((sum, record) => sum + Number(record.amount), 0);
 
   const approvedExpenses = expenses
@@ -258,6 +272,11 @@ const paidExpenses = expenses
       return;
     }
 
+    if (recordType === "income") {
+      alert("Sales income is generated automatically when a sale is recorded. Please record the sale in Sales instead of entering it again here.");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -296,6 +315,8 @@ const paidExpenses = expenses
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["finance-income"] }),
         queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
       ]);
     } catch (error) {
       alert(
@@ -335,7 +356,11 @@ const paidExpenses = expenses
 
       if (error) throw error;
 
-      await queryClient.invalidateQueries({ queryKey: ["finance-expenses"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
+      ]);
     } catch (error) {
       alert(
         error instanceof Error
@@ -363,10 +388,6 @@ const paidExpenses = expenses
                 <ArrowDownCircle className="mr-2 h-4 w-4" />
                 Record expense
               </Button>
-              <Button onClick={() => openRecord("income")}>
-                <ArrowUpCircle className="mr-2 h-4 w-4" />
-                Record income
-              </Button>
             </div>
           ) : undefined
         }
@@ -393,6 +414,19 @@ const paidExpenses = expenses
         
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-sm">Expenses recorded</span>
+            <ArrowDownCircle className="h-5 w-5" />
+          </div>
+          <div className="mt-3 text-2xl font-semibold">
+            {formatNaira(recordedExpenses)}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Includes pending expenses; rejected and cancelled entries are excluded
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-5">
+          <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-sm">Approved expenses</span>
             <ArrowDownCircle className="h-5 w-5" />
           </div>
@@ -400,20 +434,7 @@ const paidExpenses = expenses
             {formatNaira(approvedExpenses)}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Expenses approved for payment
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Actual expenses paid</span>
-            <ArrowDownCircle className="h-5 w-5" />
-          </div>
-          <div className="mt-3 text-2xl font-semibold">
-            {formatNaira(paidExpenses)}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Payments recorded as completed
+            Approved for payment
           </p>
         </div>
 
@@ -536,7 +557,7 @@ const paidExpenses = expenses
                     <DollarSign className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                     <p className="font-medium">No finance records found</p>
                     <p className="mt-1 text-muted-foreground">
-                      Record income or expenses to start tracking your farm finances.
+                      Record sales in Sales and expenses here. Sale receipts appear automatically in this ledger.
                     </p>
                   </td>
                 </tr>

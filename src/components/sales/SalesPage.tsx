@@ -376,6 +376,10 @@ function SalesContent() {
         queryClient.invalidateQueries({ queryKey: ["reports-sales"] }),
         queryClient.invalidateQueries({ queryKey: ["reports-sale-items"] }),
         queryClient.invalidateQueries({ queryKey: ["reports-animals"] }),
+        queryClient.invalidateQueries({ queryKey: ["finance-income"] }),
+        queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
       ]);
     } catch (error) {
       alert(
@@ -445,7 +449,13 @@ function SalesContent() {
       setSelectedSale(data as Sale);
       setPaymentDialog(false);
       setReceiptDialog(true);
-      await refreshData();
+      await Promise.all([
+        refreshData(),
+        queryClient.invalidateQueries({ queryKey: ["finance-income"] }),
+        queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
+      ]);
     } catch (error) {
       alert(
         error instanceof Error

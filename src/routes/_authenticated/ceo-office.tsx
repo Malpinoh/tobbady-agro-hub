@@ -38,6 +38,7 @@ function CEOOffice() {
   const documentFileInputRef = useRef<HTMLInputElement>(null);
   const query = useQuery({
     queryKey: ["ceo-office-live-data"],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const [
         batchesResult,
@@ -73,17 +74,21 @@ function CEOOffice() {
       ]);
 
       const results = [
-        batchesResult,
-        animalsResult,
-        salesResult,
-        expensesResult,
-        incomeResult,
-        inventoryResult,
-        saleItemsResult,
-      ];
+        ["livestock batches", batchesResult],
+        ["individual animals", animalsResult],
+        ["sales", salesResult],
+        ["expenses", expensesResult],
+        ["income ledger", incomeResult],
+        ["inventory", inventoryResult],
+        ["sale item costs", saleItemsResult],
+      ] as const;
 
-      for (const result of results) {
-        if (result.error) throw result.error;
+      for (const [source, result] of results) {
+        if (result.error) {
+          throw new Error(
+            `Executive Office could not load ${source}: ${result.error.message}${result.error.code ? ` (code ${result.error.code})` : ""}`,
+          );
+        }
       }
 
       const batches = batchesResult.data ?? [];
@@ -106,8 +111,13 @@ function CEOOffice() {
         ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase())
       );
 
+      // Expenses are recognized when recorded unless rejected or voided.
+      // Approval state remains visible separately in the Finance workflow.
       const validExpenses = expenses.filter(
-        (expense) => String(expense.status ?? "").toLowerCase() === "approved"
+        (expense) =>
+          !["rejected", "cancelled", "canceled", "void"].includes(
+            String(expense.status ?? "").toLowerCase(),
+          )
       );
 
       const validIncome = income.filter(
@@ -516,9 +526,13 @@ function CEOOffice() {
         </Panel>
       ) : query.isError ? (
         <Panel title="Unable to load executive data">
-          <p className="text-sm text-muted-foreground">
-            Check the Supabase connection, table permissions, and
-            database schema.
+          <p className="text-sm text-destructive">
+            {query.error instanceof Error
+              ? query.error.message
+              : "An unknown error occurred while loading executive data."}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Correct the reported data source or permission issue, then refresh.
           </p>
           <button
             type="button"

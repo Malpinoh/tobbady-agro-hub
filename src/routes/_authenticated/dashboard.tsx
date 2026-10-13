@@ -32,6 +32,7 @@ const number = (value: unknown) => Number(value ?? 0);
 function Dashboard() {
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-live-data"],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const [
         batchesResult,
@@ -164,7 +165,7 @@ function Dashboard() {
         .filter(
           (expense) =>
             expense.spent_on === today &&
-            String(expense.status ?? "").toLowerCase() === "approved"
+            !["rejected", "cancelled", "canceled", "void"].includes(String(expense.status ?? "").toLowerCase())
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
@@ -192,7 +193,7 @@ function Dashboard() {
           (expense) =>
             expense.spent_on >= monthStart &&
             expense.spent_on <= today &&
-            String(expense.status ?? "").toLowerCase() === "approved"
+            !["rejected", "cancelled", "canceled", "void"].includes(String(expense.status ?? "").toLowerCase())
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
