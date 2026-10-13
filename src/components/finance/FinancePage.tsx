@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNaira } from "@/lib/access";
+import { getLocalDateInputValue } from "@/lib/date-time";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,7 +106,7 @@ function FinanceContent() {
     amount: "",
     category: "Animal feed",
     description: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateInputValue(),
     reference: "",
     livestockLink: "none",
   });
@@ -184,22 +185,21 @@ function FinanceContent() {
     .reduce((sum, record) => sum + Number(record.amount), 0);
 
   const approvedExpenses = expenses
-    .filter((record) => record.status === "approved")
+    .filter((record) => record.status.toLowerCase() === "approved")
     .reduce((sum, record) => sum + Number(record.amount), 0);
 
 const paidExpenses = expenses
-  .filter(
-    (record) =>
-      record.payment_status === "paid" &&
-      record.status !== "rejected" &&
-      record.status !== "cancelled",
-  )
-  .reduce((sum, record) => sum + Number(record.amount), 0);
+    .filter(
+      (record) =>
+        record.payment_status.toLowerCase() === "paid" &&
+        !["rejected", "cancelled", "canceled", "void"].includes(record.status.toLowerCase()),
+    )
+    .reduce((sum, record) => sum + Number(record.amount), 0);
   const pendingExpenses = expenses.filter(
     (record) => record.status === "pending",
   );
 
-  const netBalance = totalIncome - paidExpenses;
+  const netCashMovement = totalIncome - paidExpenses;
 
   const combinedRecords = useMemo(() => {
     const incomeRows = incomes.map((record) => ({
@@ -315,6 +315,7 @@ const paidExpenses = expenses
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["finance-income"] }),
         queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-expenses"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
         queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
       ]);
@@ -358,6 +359,7 @@ const paidExpenses = expenses
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-expenses"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
         queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
       ]);
@@ -402,12 +404,12 @@ const paidExpenses = expenses
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Total income</span>
+            <span className="text-sm">Income received</span>
             <ArrowUpCircle className="h-5 w-5" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{formatNaira(totalIncome)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Received or approved income
+            Cash received, including payments linked to sales
           </p>
         </div>
 
@@ -434,18 +436,18 @@ const paidExpenses = expenses
             {formatNaira(approvedExpenses)}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Approved for payment
+            Approved for reporting; payment may still be outstanding
           </p>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Net balance</span>
+            <span className="text-sm">Net recorded cash movement</span>
             <Wallet className="h-5 w-5" />
           </div>
-          <div className="mt-3 text-2xl font-semibold">{formatNaira(netBalance)}</div>
+          <div className="mt-3 text-2xl font-semibold">{formatNaira(netCashMovement)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Income minus actual expenses paid
+            Income received minus expenses marked paid. This is not a bank balance and excludes any opening cash balance.
           </p>
         </div>
 
