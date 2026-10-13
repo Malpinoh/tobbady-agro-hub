@@ -260,7 +260,7 @@ function SalesContent() {
       customer_id: "",
       total_amount: "",
       amount_paid: "0",
-      sale_date: new Date().toISOString().slice(0, 10),
+      sale_date: getLocalDateInputValue(),
       notes: "",
     });
     setSaleItems([{ kind: "animal", record_id: "", quantity: "1", unit_price: "" }]);
