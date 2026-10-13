@@ -282,7 +282,7 @@ function Dashboard() {
                 <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {label}
                 </div>
-                <div className="mt-2 font-display text-2xl font-bold tabular-nums">
+                <div className={`mt-2 font-display text-2xl font-bold tabular-nums ${label.includes("Expense") ? "text-red-600" : label.includes("Profit") ? (data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700") : label.includes("Livestock") ? "text-blue-600" : ""}`}>
                   {value}
                 </div>
               </div>
@@ -299,7 +299,7 @@ function Dashboard() {
                       <XAxis dataKey="type" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="quantity" name="Animals / head count" />
+                      <Bar dataKey="quantity" name="Animals / head count" fill="#2563eb" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -309,11 +309,11 @@ function Dashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Revenue</p>
-                  <p className="mt-1 text-lg font-semibold">{data ? money(data.monthlyRevenue) : "—"}</p>
+                  <p className="mt-1 text-lg font-semibold text-green-700">{data ? money(data.monthlyRevenue) : "—"}</p>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Expenses</p>
-                  <p className="mt-1 text-lg font-semibold">{data ? money(data.monthlyExpenses) : "—"}</p>
+                  <p className="mt-1 text-lg font-semibold text-red-600">{data ? money(data.monthlyExpenses) : "—"}</p>
                 </div>
               </div>
               <div className="mt-4 h-52 w-full">
@@ -324,8 +324,8 @@ function Dashboard() {
                     <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
                     <Tooltip formatter={(value) => money(Number(value ?? 0))} />
                     <Legend />
-                    <Bar dataKey="revenue" name="Revenue" />
-                    <Bar dataKey="expenses" name="Expenses" />
+                    <Bar dataKey="revenue" name="Revenue" fill="#16a34a" />
+                    <Bar dataKey="expenses" name="Expenses" fill="#dc2626" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
