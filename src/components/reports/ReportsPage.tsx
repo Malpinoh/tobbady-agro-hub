@@ -212,12 +212,12 @@ export function ReportsPage() {
   const income = (incomeQuery.data ?? []).filter(
     (item) =>
       inPeriod(item.received_on) &&
-      ["received", "approved"].includes(item.status),
+      ["received", "approved"].includes(String(item.status ?? "").toLowerCase()),
   );
 
   const expenses = (expensesQuery.data ?? []).filter(
     (item) =>
-      inPeriod(item.spent_on) && item.status === "approved",
+      inPeriod(item.spent_on) && String(item.status ?? "").toLowerCase() === "approved",
   );
 
   const totalIncome = income.reduce(
@@ -267,8 +267,8 @@ export function ReportsPage() {
     animals: animals.filter(
       (animal) =>
         animal.livestock_type_id === type.id &&
-        !["sold", "deceased", "dead", "disposed"].includes(
-          animal.status.toLowerCase(),
+        !["sold", "inactive", "deceased", "dead", "disposed"].includes(
+          String(animal.status ?? "active").toLowerCase(),
         ),
     ).length,
     batchQuantity: batches
@@ -276,8 +276,8 @@ export function ReportsPage() {
       .reduce(
         (sum, batch) =>
           sum +
-          (["active", "healthy"].includes(batch.status.toLowerCase())
-            ? Number(batch.current_quantity || 0)
+          (!["sold", "inactive", "deceased", "dead", "disposed"].includes(String(batch.status ?? "active").toLowerCase())
+            ? Math.max(0, Number(batch.current_quantity || 0))
             : 0),
         0,
       ),
