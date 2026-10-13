@@ -161,11 +161,12 @@ function Dashboard() {
         .filter((sale) => sale.sale_date === today)
         .reduce((sum, sale) => sum + number(sale.total_amount), 0);
 
+      // Match the Profit & Loss report: only approved expenses affect this KPI.
       const todayExpenses = expenses
         .filter(
           (expense) =>
             expense.spent_on === today &&
-            !["rejected", "cancelled", "canceled", "void"].includes(String(expense.status ?? "").toLowerCase())
+            String(expense.status ?? "").toLowerCase() === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
@@ -188,12 +189,13 @@ function Dashboard() {
         .reduce((sum, item) => sum + number(item.cost_total), 0);
       const monthIncome = monthOtherIncome + monthSales;
 
+      // Keep Dashboard expenses aligned with Reports & Analytics (approved only).
       const monthExpenses = expenses
         .filter(
           (expense) =>
             expense.spent_on >= monthStart &&
             expense.spent_on <= today &&
-            !["rejected", "cancelled", "canceled", "void"].includes(String(expense.status ?? "").toLowerCase())
+            String(expense.status ?? "").toLowerCase() === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
