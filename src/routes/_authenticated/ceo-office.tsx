@@ -94,7 +94,12 @@ function CEOOffice() {
       const inventory = inventoryResult.data ?? [];
       const saleItems = saleItemsResult.data ?? [];
 
-      const today = new Date().toLocaleDateString("en-CA");
+      const now = new Date();
+      const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+      ].join("-");
       const monthStart = `${today.slice(0, 7)}-01`;
 
       const validSales = sales.filter((sale) =>
