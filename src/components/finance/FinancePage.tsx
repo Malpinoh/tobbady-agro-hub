@@ -412,7 +412,7 @@ const paidExpenses = expenses
     <div className="space-y-6">
       <PageHeader
         title="Finance"
-        description="Monitor farm income, expenses, approvals and cash flow."
+        description="Track cash received, expenses and approvals. Net recorded cash movement is not a bank balance; use Reports for profit/loss."
         actions={
           canManage ? (
             <div className="flex flex-wrap gap-2">
