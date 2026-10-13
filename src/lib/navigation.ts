@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Crown, ClipboardList, Tractor, Beef, Wallet, ShoppingCart,
-  Package, Truck, Users, BarChart3, Bell, Settings, Tags, FileUp, type LucideIcon,
+  Package, Truck, Users, BarChart3, Bell, Settings, Tags, FileUp, BookOpen, type LucideIcon,
 } from "lucide-react";
 import type { PermissionKey } from "./access";
 
@@ -15,6 +15,7 @@ export type NavItem = {
 /** Single source of truth for sidebar + page access. */
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard.view", group: "Overview" },
+  { to: "/operations-guide", label: "Operations Guide", icon: BookOpen, permission: "dashboard.view", group: "Overview" },
   { to: "/ceo-office", label: "CEO Office", icon: Crown, permission: "ceo.view", group: "Offices" },
   { to: "/secretary-office", label: "Secretary Office", icon: ClipboardList, permission: "secretary.view", group: "Offices" },
   { to: "/board-documents", label: "Board Documents", icon: FileUp, permission: "documents.manage", group: "Offices" },
