@@ -209,9 +209,11 @@ export function BatchFormDialog({
           : "Batch submitted for CEO/Administrator approval",
       );
 
-      void qc.invalidateQueries({
-        queryKey: livestockKeys.all,
-      });
+      void Promise.all([
+        qc.invalidateQueries({ queryKey: livestockKeys.all }),
+        qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        qc.invalidateQueries({ queryKey: ["reports-batches"] }),
+      ]);
 
       onOpenChange(false);
     },
