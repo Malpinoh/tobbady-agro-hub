@@ -137,6 +137,7 @@ function SalesContent() {
         .from("animals")
         .select("id, tag_number, livestock_type_id, acquisition_cost, status")
         .eq("status", "active")
+        .eq("approval_status", "approved")
         .order("tag_number");
       if (error) throw error;
       return data ?? [];
@@ -150,6 +151,7 @@ function SalesContent() {
         .from("animal_batches")
         .select("id, batch_code, livestock_type_id, current_quantity, initial_quantity, acquisition_cost, status")
         .eq("status", "active")
+        .eq("approval_status", "approved")
         .gt("current_quantity", 0)
         .order("batch_code");
       if (error) throw error;
