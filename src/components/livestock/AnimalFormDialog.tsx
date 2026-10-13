@@ -70,7 +70,11 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
     },
     onSuccess: () => {
       toast.success(animal ? "Edit request submitted for CEO/Administrator approval" : "Animal submitted for CEO/Administrator approval");
-      void qc.invalidateQueries({ queryKey: livestockKeys.all });
+      void Promise.all([
+        qc.invalidateQueries({ queryKey: livestockKeys.all }),
+        qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        qc.invalidateQueries({ queryKey: ["reports-animals"] }),
+      ]);
       onOpenChange(false);
     },
     onError: (e) => { if (e.message !== "validation") toast.error(friendlyError(e)); },
