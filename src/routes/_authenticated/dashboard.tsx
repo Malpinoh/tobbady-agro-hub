@@ -41,6 +41,7 @@ function Dashboard() {
         expensesResult,
         incomeResult,
         inventoryResult,
+        saleItemsResult,
       ] = await Promise.all([
         supabase
           .from("animal_batches")
@@ -66,6 +67,7 @@ function Dashboard() {
           .from("inventory_items")
           .select("id, name, quantity_on_hand, reorder_level, unit")
           .eq("approval_status", "approved"),
+        supabase.from("sale_items").select("sale_id, cost_total"),
       ]);
 
       const results = [
@@ -76,6 +78,7 @@ function Dashboard() {
         expensesResult,
         incomeResult,
         inventoryResult,
+        saleItemsResult,
       ];
 
       for (const result of results) {
@@ -105,7 +108,7 @@ function Dashboard() {
       const monthStart = `${today.slice(0, 7)}-01`;
 
       const activeBatches = batches.filter(
-        (batch) => batch.status !== "sold" && batch.status !== "inactive"
+        (batch) => !["sold", "inactive", "deceased", "dead", "disposed"].includes(String(batch.status ?? "active").toLowerCase()) && number(batch.current_quantity) > 0
       );
 
       const batchCount = activeBatches.reduce(
@@ -149,38 +152,42 @@ function Dashboard() {
         };
       });
 
-      const todaySales = sales
-        .filter(
-          (sale) =>
-            sale.sale_date === today &&
-            sale.status !== "cancelled" &&
-            sale.status !== "void"
-        )
+      const recognisedSales = sales.filter((sale) => ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase()));
+      const todaySales = recognisedSales
+        .filter((sale) => sale.sale_date === today)
         .reduce((sum, sale) => sum + number(sale.total_amount), 0);
 
       const todayExpenses = expenses
         .filter(
           (expense) =>
             expense.spent_on === today &&
-            expense.status === "approved"
+            String(expense.status ?? "").toLowerCase() === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
-      const monthIncome = income
+      const monthOtherIncome = income
         .filter(
           (item) =>
             item.received_on >= monthStart &&
             item.received_on <= today &&
-            ["received", "approved"].includes(item.status)
+            ["received", "approved"].includes(String(item.status ?? "").toLowerCase())
         )
         .reduce((sum, item) => sum + number(item.amount), 0);
+      const monthSales = recognisedSales
+        .filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today)
+        .reduce((sum, sale) => sum + number(sale.total_amount), 0);
+      const monthSaleIds = new Set(recognisedSales.filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today).map((sale) => sale.id));
+      const monthCostOfGoodsSold = (saleItemsResult.data ?? [])
+        .filter((item) => monthSaleIds.has(item.sale_id))
+        .reduce((sum, item) => sum + number(item.cost_total), 0);
+      const monthIncome = monthOtherIncome + monthSales;
 
       const monthExpenses = expenses
         .filter(
           (expense) =>
             expense.spent_on >= monthStart &&
             expense.spent_on <= today &&
-            expense.status === "approved"
+            String(expense.status ?? "").toLowerCase() === "approved"
         )
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
@@ -197,14 +204,11 @@ function Dashboard() {
         todayExpenses,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
-        estimatedProfit: monthIncome - monthExpenses,
+        estimatedProfit: monthIncome - monthExpenses - monthCostOfGoodsSold,
         livestockSummary,
         lowStock,
         recentSales: [...sales]
-          .filter(
-            (sale) =>
-              sale.status !== "cancelled" && sale.status !== "void"
-          )
+          .filter((sale) => ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase()))
           .sort((a, b) => b.sale_date.localeCompare(a.sale_date))
           .slice(0, 5),
         recentExpenses: [...expenses]
@@ -419,8 +423,7 @@ function Dashboard() {
                 Dashboard data loaded from Supabase.
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Revenue and expenses are calculated from records available in
-                the database for the current month.
+                Revenue includes recognised sales and received income. Estimated profit subtracts approved expenses and the recorded cost of livestock sold.
               </p>
             </Panel>
           </div>
