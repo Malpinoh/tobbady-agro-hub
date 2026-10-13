@@ -398,7 +398,7 @@ export function ReportsPage() {
                   </div>
                 </div>
                 <div className="rounded-xl border p-4">
-                  <h2 className="mb-4 font-semibold">Income vs expenses by category</h2>
+                  <h2 className="mb-4 font-semibold">Revenue vs costs by category</h2>
                   {financeChartData.length ? (
                     <div className="h-72 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -408,8 +408,8 @@ export function ReportsPage() {
                           <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
                           <Tooltip formatter={(value) => formatNaira(Number(value ?? 0))} />
                           <Legend />
-                          <Bar dataKey="income" name="Recognised income" fill="#16a34a" />
-                          <Bar dataKey="expenses" name="Approved expenses" fill="#dc2626" />
+                          <Bar dataKey="income" name="Revenue" fill="#16a34a" />
+                          <Bar dataKey="expenses" name="Costs and approved expenses" fill="#dc2626" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
