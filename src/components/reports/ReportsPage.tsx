@@ -218,9 +218,21 @@ export function ReportsPage() {
       ["received", "approved"].includes(String(item.status ?? "").toLowerCase()),
   );
 
-  const expenses = (expensesQuery.data ?? []).filter(
+  const approvedExpenses = (expensesQuery.data ?? []).filter(
     (item) =>
       inPeriod(item.spent_on) && String(item.status ?? "").toLowerCase() === "approved",
+  );
+  // Livestock acquisition is an asset cost, not an operating expense. It is
+  // recognised in profit/loss through cost of livestock sold when the animal is sold.
+  const livestockAcquisitions = approvedExpenses.filter(
+    (item) => String(item.category ?? "").trim().toLowerCase() === "livestock purchase",
+  );
+  const totalLivestockAcquisitions = livestockAcquisitions.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0,
+  );
+  const expenses = approvedExpenses.filter(
+    (item) => String(item.category ?? "").trim().toLowerCase() !== "livestock purchase",
   );
 
   const totalIncome = income.reduce(
@@ -375,7 +387,7 @@ export function ReportsPage() {
           <>
             {tab === "profit" && (
               <div className="space-y-5">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                   <StatCard
                     title="Other Recognised Income"
                     value={formatNaira(totalIncome)}
@@ -391,6 +403,10 @@ export function ReportsPage() {
                   <StatCard
                     title="Approved Operating Expenses"
                     value={formatNaira(totalExpenses)}
+                  />
+                  <StatCard
+                    title="Livestock Acquisitions (separate)"
+                    value={formatNaira(totalLivestockAcquisitions)}
                   />
                   <div className={`rounded-xl border bg-card p-5 ${netProfit < 0 ? "text-red-600" : "text-green-700"}`}>
                     <p className="text-sm text-muted-foreground">Net Profit / Loss</p>
@@ -455,7 +471,7 @@ export function ReportsPage() {
                     <span className="text-right">{formatNaira(totalExpenses + costOfGoodsSold)}</span>
                   </div>
                   <p className="p-4 text-xs text-muted-foreground">
-                    Net profit / loss = completed livestock sales revenue + other recognised income − approved expenses − cost of livestock sold. Sales revenue uses the full invoice value; cash received and outstanding customer balances are tracked separately. This is a management report, not a substitute for audited financial statements.
+                    Net profit / loss = completed livestock sales revenue + other recognised income − approved operating expenses − cost of livestock sold. Livestock purchase entries are shown separately and excluded from operating expenses to avoid counting the same acquisition cost twice; the animal/batch acquisition cost is recognised when livestock is sold. Sales revenue uses full invoice value, while cash received and outstanding balances are tracked separately. This is a management report, not a substitute for audited financial statements.
                   </p>
                 </div>
               </div>
