@@ -251,8 +251,11 @@ function InventoryContent() {
 
       setItemDialog(false);
       if (!editingItem) alert("Inventory item submitted for CEO/Administrator approval. It will not count as stock until approved.");
-      await queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
-      await queryClient.invalidateQueries({ queryKey: ["record-approvals-pending"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory-items"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["record-approvals-pending"] }),
+      ]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not save inventory item.");
     } finally {
@@ -356,6 +359,7 @@ function InventoryContent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["inventory-items"] }),
         queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
       ]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not record stock movement.");
