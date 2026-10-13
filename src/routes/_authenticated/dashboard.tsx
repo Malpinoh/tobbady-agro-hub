@@ -228,6 +228,7 @@ function Dashboard() {
           .sort((a, b) => b.sale_date.localeCompare(a.sale_date))
           .slice(0, 5),
         recentExpenses: [...expenses]
+          .filter((expense) => String(expense.status ?? "").toLowerCase() === "approved")
           .sort((a, b) => b.spent_on.localeCompare(a.spent_on))
           .slice(0, 5),
       };
@@ -437,7 +438,7 @@ function Dashboard() {
                       key={expense.id}
                       className="flex justify-between gap-3"
                     >
-                      <span>{expense.spent_on}</span>
+                      <span>{expense.category} · {expense.spent_on}</span>
                       <span className="font-medium">
                         {money(number(expense.amount))}
                       </span>
