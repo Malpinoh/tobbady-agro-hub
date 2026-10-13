@@ -350,6 +350,8 @@ function BatchActionDialog({
     () => new Date().toISOString().slice(0, 10),
   );
   const [quantity, setQuantity] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [amountPaid, setAmountPaid] = useState("0");
   const [note, setNote] = useState("");
   const [farmId, setFarmId] = useState(
     lk.farmIdOf(batch.farm_section_id),
@@ -380,6 +382,35 @@ function BatchActionDialog({
         throw new Error("No movement type selected.");
       }
 
+      if (action === "sale") {
+        const price = Number(unitPrice);
+        const paid = Number(amountPaid || 0);
+        const total = qty * price;
+
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new Error("Enter a unit sale price greater than zero.");
+        }
+        if (!Number.isFinite(paid) || paid < 0 || paid > total) {
+          throw new Error("Amount paid must be between zero and the sale total.");
+        }
+
+        const { error } = await supabase.rpc("create_livestock_sale", {
+          p_customer_id: null,
+          p_sale_date: date,
+          p_amount_paid: paid,
+          p_notes: note.trim() || `Batch sale: ${batch.batch_code}`,
+          p_items: [{
+            kind: "batch",
+            record_id: batch.id,
+            quantity: qty,
+            unit_price: price,
+          }],
+        });
+
+        if (error) throw new Error(error.message);
+        return;
+      }
+
       const { error } = await supabase
         .from("batch_movements")
         .insert({
@@ -405,19 +436,25 @@ function BatchActionDialog({
         action === "mortality"
           ? "Mortality recorded"
           : action === "sale"
-            ? "Batch sale recorded"
+            ? "Sales invoice created and batch stock updated"
             : "Batch transfer recorded",
       );
 
       void Promise.all([
         qc.invalidateQueries({ queryKey: livestockKeys.all }),
         qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        qc.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
+        qc.invalidateQueries({ queryKey: ["sales-records"] }),
         qc.invalidateQueries({ queryKey: ["reports-batches"] }),
         qc.invalidateQueries({ queryKey: ["reports-sales"] }),
+        qc.invalidateQueries({ queryKey: ["reports-sale-items"] }),
+        qc.invalidateQueries({ queryKey: ["reports-animals"] }),
       ]);
 
       onClose();
       setQuantity("");
+      setUnitPrice("");
+      setAmountPaid("0");
       setNote("");
       setSectionId("");
     },
@@ -477,6 +514,36 @@ function BatchActionDialog({
               onChange={(e) => setDate(e.target.value)}
             />
           </Field>
+
+          {action === "sale" && (
+            <>
+              <Field label="Unit sale price (₦)" required>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  placeholder="Enter price per bird"
+                />
+              </Field>
+              <Field label="Amount paid now (₦)">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(e.target.value)}
+                  placeholder="0"
+                />
+              </Field>
+              {Number(unitPrice) > 0 && Number(quantity) > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Invoice total: ₦{(Number(unitPrice) * Number(quantity)).toLocaleString("en-NG")}
+                </p>
+              )}
+            </>
+          )}
 
           {action === "transfer" && (
             <SectionPicker

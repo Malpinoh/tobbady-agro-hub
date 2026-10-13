@@ -548,7 +548,7 @@ export default function LivestockPage() {
             label="Batch livestock"
             value={stats.birds.toLocaleString()}
             icon={Bird}
-            description="Current birds across batches"
+            description="Current birds in active batches"
           />
 
           <StatCard

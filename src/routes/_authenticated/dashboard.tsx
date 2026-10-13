@@ -89,10 +89,7 @@ function Dashboard() {
       const types = typesResult.data ?? [];
       const animals = animalsResult.data ?? [];
       const activeAnimals = animals.filter(
-        (animal) =>
-          !["sold", "inactive", "deceased", "dead", "disposed"].includes(
-            String(animal.status ?? "active").toLowerCase(),
-          ),
+        (animal) => String(animal.status ?? "").toLowerCase() === "active",
       );
       const sales = salesResult.data ?? [];
       const expenses = expensesResult.data ?? [];
@@ -108,7 +105,9 @@ function Dashboard() {
       const monthStart = `${today.slice(0, 7)}-01`;
 
       const activeBatches = batches.filter(
-        (batch) => !["sold", "inactive", "deceased", "dead", "disposed"].includes(String(batch.status ?? "active").toLowerCase()) && number(batch.current_quantity) > 0
+        (batch) =>
+          String(batch.status ?? "").toLowerCase() === "active" &&
+          number(batch.current_quantity) > 0,
       );
 
       const batchCount = activeBatches.reduce(

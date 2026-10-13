@@ -141,7 +141,8 @@ export function ReportsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("animals")
-        .select("id, tag_number, livestock_type_id, status");
+        .select("id, tag_number, livestock_type_id, status")
+        .eq("approval_status", "approved");
       if (error) throw error;
       return data ?? [];
     },
@@ -152,7 +153,8 @@ export function ReportsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("animal_batches")
-        .select("id, batch_code, livestock_type_id, current_quantity, status");
+        .select("id, batch_code, livestock_type_id, current_quantity, status")
+        .eq("approval_status", "approved");
       if (error) throw error;
       return data ?? [];
     },
@@ -269,18 +271,16 @@ export function ReportsPage() {
     animals: animals.filter(
       (animal) =>
         animal.livestock_type_id === type.id &&
-        !["sold", "inactive", "deceased", "dead", "disposed"].includes(
-          String(animal.status ?? "active").toLowerCase(),
-        ),
+        String(animal.status ?? "").toLowerCase() === "active",
     ).length,
     batchQuantity: batches
-      .filter((batch) => batch.livestock_type_id === type.id)
+      .filter(
+        (batch) =>
+          batch.livestock_type_id === type.id &&
+          String(batch.status ?? "").toLowerCase() === "active",
+      )
       .reduce(
-        (sum, batch) =>
-          sum +
-          (!["sold", "inactive", "deceased", "dead", "disposed"].includes(String(batch.status ?? "active").toLowerCase())
-            ? Math.max(0, Number(batch.current_quantity || 0))
-            : 0),
+        (sum, batch) => sum + Math.max(0, Number(batch.current_quantity || 0)),
         0,
       ),
   }));

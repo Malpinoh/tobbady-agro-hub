@@ -46,23 +46,30 @@ function CEOOffice() {
         expensesResult,
         incomeResult,
         inventoryResult,
+        saleItemsResult,
       ] = await Promise.all([
         supabase
           .from("animal_batches")
-          .select("id, current_quantity, estimated_unit_value, status"),
-        supabase.from("animals").select("id, estimated_value"),
+          .select("id, current_quantity, estimated_unit_value, status, approval_status")
+          .eq("approval_status", "approved"),
+        supabase
+          .from("animals")
+          .select("id, estimated_value, status, approval_status")
+          .eq("approval_status", "approved"),
         supabase.from("sales").select(
           "id, sale_date, total_amount, status"
         ),
         supabase.from("expenses").select(
-        "id, spent_on, amount, status, payment_status"
-      ),
+          "id, spent_on, amount, status, payment_status"
+        ),
         supabase.from("income").select(
-          "id, received_on, amount, status"
+          "id, sale_id, category, received_on, amount, status"
         ),
-        supabase.from("inventory_items").select(
-          "id, name, quantity_on_hand, reorder_level"
-        ),
+        supabase
+          .from("inventory_items")
+          .select("id, name, quantity_on_hand, reorder_level")
+          .eq("approval_status", "approved"),
+        supabase.from("sale_items").select("sale_id, cost_total"),
       ]);
 
       const results = [
@@ -72,6 +79,7 @@ function CEOOffice() {
         expensesResult,
         incomeResult,
         inventoryResult,
+        saleItemsResult,
       ];
 
       for (const result of results) {
@@ -84,60 +92,87 @@ function CEOOffice() {
       const expenses = expensesResult.data ?? [];
       const income = incomeResult.data ?? [];
       const inventory = inventoryResult.data ?? [];
+      const saleItems = saleItemsResult.data ?? [];
 
-      const today = new Date().toLocaleDateString("en-CA");
+      const now = new Date();
+      const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+      ].join("-");
       const monthStart = `${today.slice(0, 7)}-01`;
 
-      const validSales = sales.filter(
-        (s) => s.status !== "cancelled" && s.status !== "void"
+      const validSales = sales.filter((sale) =>
+        ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase())
       );
 
-      const validExpenses = expenses.filter((e) => e.status === "approved");
+      const validExpenses = expenses.filter(
+        (expense) => String(expense.status ?? "").toLowerCase() === "approved"
+      );
 
-      const validIncome = income.filter((i) => ["received", "approved"].includes(i.status));
+      const validIncome = income.filter(
+        (item) =>
+          !item.sale_id &&
+          String(item.category ?? "").trim().toLowerCase() !== "livestock sales" &&
+          ["received", "approved"].includes(String(item.status ?? "").toLowerCase())
+      );
 
       const activeBatches = batches.filter(
-        (b) => b.status !== "sold" && b.status !== "inactive"
+        (batch) =>
+          String(batch.status ?? "").toLowerCase() === "active" &&
+          amount(batch.current_quantity) > 0
+      );
+      const activeAnimals = animals.filter(
+        (animal) => String(animal.status ?? "").toLowerCase() === "active"
       );
 
       const livestockCount =
         activeBatches.reduce(
-          (sum, b) => sum + amount(b.current_quantity),
+          (sum, batch) => sum + amount(batch.current_quantity),
           0
-        ) + animals.length;
+        ) + activeAnimals.length;
 
       const livestockValue =
         activeBatches.reduce(
-          (sum, b) =>
+          (sum, batch) =>
             sum +
-            amount(b.current_quantity) *
-              amount(b.estimated_unit_value),
+            amount(batch.current_quantity) *
+              amount(batch.estimated_unit_value),
           0
         ) +
-        animals.reduce(
-          (sum, a) => sum + amount(a.estimated_value),
+        activeAnimals.reduce(
+          (sum, animal) => sum + amount(animal.estimated_value),
           0
         );
 
       const monthlySales = validSales
-        .filter((s) => s.sale_date >= monthStart && s.sale_date <= today)
-        .reduce((sum, s) => sum + amount(s.total_amount), 0);
+        .filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today)
+        .reduce((sum, sale) => sum + amount(sale.total_amount), 0);
 
-      const monthlyIncome = validIncome
+      const monthSalesIds = new Set(
+        validSales
+          .filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today)
+          .map((sale) => sale.id)
+      );
+      const monthlyCostOfGoodsSold = saleItems
+        .filter((item) => monthSalesIds.has(item.sale_id))
+        .reduce((sum, item) => sum + amount(item.cost_total), 0);
+
+      const monthlyOtherIncome = validIncome
         .filter(
-          (i) => i.received_on >= monthStart && i.received_on <= today
+          (item) => item.received_on >= monthStart && item.received_on <= today
         )
-        .reduce((sum, i) => sum + amount(i.amount), 0);
+        .reduce((sum, item) => sum + amount(item.amount), 0);
 
       const monthlyExpenses = validExpenses
         .filter(
-          (e) => e.spent_on >= monthStart && e.spent_on <= today
+          (expense) => expense.spent_on >= monthStart && expense.spent_on <= today
         )
-        .reduce((sum, e) => sum + amount(e.amount), 0);
+        .reduce((sum, expense) => sum + amount(expense.amount), 0);
 
       const todaySales = validSales
-        .filter((s) => s.sale_date === today)
-        .reduce((sum, s) => sum + amount(s.total_amount), 0);
+        .filter((sale) => sale.sale_date === today)
+        .reduce((sum, sale) => sum + amount(sale.total_amount), 0);
 
       const lowStock = inventory.filter(
         (item) =>
@@ -150,10 +185,10 @@ function CEOOffice() {
         livestockValue,
         todaySales,
         monthlySales,
-        monthlyIncome,
+        monthlyIncome: monthlyOtherIncome,
         monthlyExpenses,
         estimatedProfit:
-          monthlyIncome - monthlyExpenses,
+          monthlySales + monthlyOtherIncome - monthlyExpenses - monthlyCostOfGoodsSold,
         lowStock,
         recentSales: [...validSales]
           .sort((a, b) => b.sale_date.localeCompare(a.sale_date))
