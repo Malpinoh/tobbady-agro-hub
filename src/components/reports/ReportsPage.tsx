@@ -123,6 +123,19 @@ export function ReportsPage() {
     },
   });
 
+  // Cost of goods sold is snapshotted on each invoice line by migration 0021.
+  // Link invoice-line costs to the sale date so historical periods stay accurate.
+  const saleItemsQuery = useQuery({
+    queryKey: ["reports-sale-items"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sale_items")
+        .select("sale_id, cost_total");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const animalsQuery = useQuery({
     queryKey: ["reports-animals"],
     queryFn: async () => {
@@ -175,6 +188,7 @@ export function ReportsPage() {
     incomeQuery,
     expensesQuery,
     salesQuery,
+    saleItemsQuery,
     animalsQuery,
     batchesQuery,
     typesQuery,
@@ -232,6 +246,13 @@ export function ReportsPage() {
     (sum, item) => sum + Number(item.amount_paid || 0),
     0,
   );
+
+  const salesIdsInPeriod = new Set(sales.map((item) => item.id));
+  const costOfGoodsSold = (saleItemsQuery.data ?? [])
+    .filter((item) => salesIdsInPeriod.has(item.sale_id))
+    .reduce((sum, item) => sum + Number(item.cost_total || 0), 0);
+  const totalRecognisedRevenue = totalIncome + totalSales;
+  const netProfit = totalRecognisedRevenue - totalExpenses - costOfGoodsSold;
 
   const animals = animalsQuery.data ?? [];
   const batches = batchesQuery.data ?? [];
@@ -350,18 +371,26 @@ export function ReportsPage() {
           <>
             {tab === "profit" && (
               <div className="space-y-5">
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   <StatCard
-                    title="Recognised Income"
+                    title="Other Recognised Income"
                     value={formatNaira(totalIncome)}
+                  />
+                  <StatCard
+                    title="Livestock Sales Revenue"
+                    value={formatNaira(totalSales)}
+                  />
+                  <StatCard
+                    title="Cost of Livestock Sold"
+                    value={formatNaira(costOfGoodsSold)}
                   />
                   <StatCard
                     title="Approved Expenses"
                     value={formatNaira(totalExpenses)}
                   />
                   <StatCard
-                    title="Net Operating Result"
-                    value={formatNaira(totalIncome - totalExpenses)}
+                    title="Net Profit / Loss"
+                    value={formatNaira(netProfit)}
                   />
                 </div>
                 <div className="rounded-xl border p-4">
@@ -417,9 +446,10 @@ export function ReportsPage() {
                     <span className="text-right">{formatNaira(totalExpenses)}</span>
                   </div>
                   <p className="p-4 text-xs text-muted-foreground">
-                    This is an operating summary based on recorded income
-                    and approved expenses, not a full audited accounting
-                    profit figure.
+                    Net profit includes recognised non-sale income and completed livestock sales,
+                    less approved expenses and the acquisition cost of livestock sold. Payments
+                    received are shown separately from sales revenue. This is a management report,
+                    not a substitute for audited financial statements.
                   </p>
                 </div>
               </div>
