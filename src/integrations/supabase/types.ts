@@ -731,6 +731,9 @@ export type Database = {
         }
         Update: {
           amount?: number
+          animal_id?: string | null
+          batch_id?: string | null
+          sale_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
