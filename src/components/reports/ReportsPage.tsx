@@ -141,7 +141,8 @@ export function ReportsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("animals")
-        .select("id, tag_number, livestock_type_id, status");
+        .select("id, tag_number, livestock_type_id, status")
+        .eq("approval_status", "approved");
       if (error) throw error;
       return data ?? [];
     },
@@ -152,7 +153,8 @@ export function ReportsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("animal_batches")
-        .select("id, batch_code, livestock_type_id, current_quantity, status");
+        .select("id, batch_code, livestock_type_id, current_quantity, status")
+        .eq("approval_status", "approved");
       if (error) throw error;
       return data ?? [];
     },
