@@ -233,6 +233,7 @@ function SalesContent() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: ["sales-customers"] }),
       queryClient.invalidateQueries({ queryKey: ["sales-records"] }),
+      queryClient.invalidateQueries({ queryKey: ["reports-sales"] }),
     ]);
   }
 
@@ -367,6 +368,7 @@ function SalesContent() {
         queryClient.invalidateQueries({ queryKey: ["sales-available-animals"] }),
         queryClient.invalidateQueries({ queryKey: ["sales-available-batches"] }),
         queryClient.invalidateQueries({ queryKey: ["reports-sales"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-sale-items"] }),
         queryClient.invalidateQueries({ queryKey: ["reports-animals"] }),
       ]);
     } catch (error) {
