@@ -386,37 +386,16 @@ function ProcurementContent() {
         receivedForm.reference.trim() ||
         `GR-${Date.now().toString().slice(-8)}`;
 
-      const { error: transactionError } = await supabase
-        .from("inventory_transactions")
-        .insert({
-          item_id: item.id,
-          quantity,
-          transaction_type: "in",
-          supplier_id: receivedForm.supplier_id || null,
-          unit_cost: unitCost,
-          reference,
-          notes: receivedForm.notes.trim() || "Goods received",
-          performed_by: user?.id ?? null,
-          occurred_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.rpc("record_procurement_receipt", {
+        p_item_id: item.id,
+        p_quantity: quantity,
+        p_unit_cost: unitCost,
+        p_supplier_id: receivedForm.supplier_id || null,
+        p_reference: reference,
+        p_notes: receivedForm.notes.trim() || "Goods received",
+      });
 
-      if (transactionError) throw transactionError;
-
-      const { error: itemError } = await supabase
-        .from("inventory_items")
-        .update({
-          quantity_on_hand: Number(item.quantity_on_hand) + quantity,
-          unit_cost: unitCost ?? item.unit_cost,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id);
-
-      if (itemError) {
-        alert(
-          "The goods-received transaction was saved, but the stock quantity could not be updated. Contact your administrator before retrying to avoid duplicate entries.",
-        );
-        throw itemError;
-      }
+      if (error) throw error;
 
       setReceivedDialog(false);
       setReceivedForm({
