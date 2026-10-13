@@ -247,7 +247,7 @@ const paidExpenses = expenses
       amount: "",
       category: type === "income" ? "Livestock sales" : "Animal feed",
       description: "",
-      date: new Date().toISOString().slice(0, 10),
+      date: getLocalDateInputValue(),
       reference: "",
       livestockLink: "none",
     });
@@ -573,7 +573,7 @@ const paidExpenses = expenses
                 <th className="p-3 font-medium">Reference</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Status</th>
-                {canApprove && <th className="p-3 font-medium">Approval / payment</th>}
+                {(canApprove || canManage) && <th className="p-3 font-medium">Approval / payment</th>}
               </tr>
             </thead>
             <tbody>
