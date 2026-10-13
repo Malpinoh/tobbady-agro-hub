@@ -550,6 +550,8 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          animal_id: string | null
+          batch_id: string | null
           approval_id: string | null
           approved_by: string | null
           category: string
@@ -566,6 +568,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          animal_id?: string | null
+          batch_id?: string | null
           approval_id?: string | null
           approved_by?: string | null
           category: string
@@ -582,6 +586,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          animal_id?: string | null
+          batch_id?: string | null
           approval_id?: string | null
           approved_by?: string | null
           category?: string
@@ -597,6 +603,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "animal_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_approval_id_fkey"
             columns: ["approval_id"]
@@ -681,6 +701,9 @@ export type Database = {
       income: {
         Row: {
           amount: number
+          animal_id: string | null
+          batch_id: string | null
+          sale_id: string | null
           category: string
           created_at: string
           description: string | null
@@ -693,6 +716,9 @@ export type Database = {
         }
         Insert: {
           amount: number
+          animal_id?: string | null
+          batch_id?: string | null
+          sale_id?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -715,7 +741,29 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "income_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "income_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "animal_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "income_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_items: {
         Row: {
