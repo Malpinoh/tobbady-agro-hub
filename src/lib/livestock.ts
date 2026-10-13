@@ -48,20 +48,19 @@ export type LivestockStats = {
   value: number; sold: number; dead: number; transferred: number;
 };
 
-/** Overview figures: individual animals count by head; batches by birds currently on hand. */
+/** Overview figures count active individual animals and birds in active batches. */
 export function computeStats(animals: Animal[], batches: BatchWithMovements[]): LivestockStats {
   const activeAnimals = animals.filter((a) => a.status === "active");
-  const birds = batches.reduce((a, b) => a + b.current_quantity, 0);
-  const activeBirds = batches.filter((b) => b.status === "active").reduce((a, b) => a + b.current_quantity, 0);
+  const birds = batches.filter((b) => b.status === "active").reduce((a, b) => a + b.current_quantity, 0);
   const bd = batches.map(batchBreakdown);
   const value =
     activeAnimals.reduce((a, x) => a + Number(x.estimated_value ?? 0), 0) +
     batches.filter((b) => b.status === "active").reduce((a, b) => a + b.current_quantity * Number(b.estimated_unit_value ?? 0), 0);
   return {
-    total: activeAnimals.length + activeBirds,
+    total: activeAnimals.length + birds,
     individuals: activeAnimals.length,
     birds,
-    active: activeAnimals.length + activeBirds,
+    active: activeAnimals.length + birds,
     value,
     sold: animals.filter((a) => a.status === "sold").length + bd.reduce((a, x) => a + x.sold, 0),
     dead: animals.filter((a) => a.status === "dead").length + bd.reduce((a, x) => a + x.mortality, 0),
