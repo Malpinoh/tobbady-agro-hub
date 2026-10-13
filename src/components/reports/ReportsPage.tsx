@@ -389,10 +389,10 @@ export function ReportsPage() {
                     title="Approved Expenses"
                     value={formatNaira(totalExpenses)}
                   />
-                  <StatCard
-                    title="Net Profit / Loss"
-                    value={formatNaira(netProfit)}
-                  />
+                  <div className={`rounded-xl border bg-card p-5 ${netProfit < 0 ? "text-red-600" : "text-green-700"}`}>
+                    <p className="text-sm text-muted-foreground">Net Profit / Loss</p>
+                    <p className="mt-3 text-2xl font-bold">{formatNaira(netProfit)}</p>
+                  </div>
                 </div>
                 <div className="rounded-xl border p-4">
                   <h2 className="mb-4 font-semibold">Income vs expenses by category</h2>
@@ -405,8 +405,8 @@ export function ReportsPage() {
                           <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
                           <Tooltip formatter={(value) => formatNaira(Number(value ?? 0))} />
                           <Legend />
-                          <Bar dataKey="income" name="Recognised income" />
-                          <Bar dataKey="expenses" name="Approved expenses" />
+                          <Bar dataKey="income" name="Recognised income" fill="#16a34a" />
+                          <Bar dataKey="expenses" name="Approved expenses" fill="#dc2626" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -483,8 +483,8 @@ export function ReportsPage() {
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="individualAnimals" name="Individual records" />
-                          <Bar dataKey="batchQuantity" name="Animals in active batches" />
+                          <Bar dataKey="individualAnimals" name="Individual records" fill="#2563eb" />
+                          <Bar dataKey="batchQuantity" name="Animals in active batches" fill="#16a34a" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
