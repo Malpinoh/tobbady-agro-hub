@@ -73,7 +73,7 @@ type Section = "customers" | "invoices" | "payments" | "receipts";
 const money = (amount: number) => formatNaira(Number(amount) || 0);
 
 function SalesContent() {
-  const { user, can } = useAuth();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
 
   const canManage = can("sales.manage");
@@ -761,11 +761,12 @@ function SalesContent() {
                       <FormField label="Livestock record type">
                         <Select
                           value={item.kind}
-                          onValueChange={(value: "animal" | "batch") =>
+                          onValueChange={(value) => {
+                            const kind: "animal" | "batch" = value === "batch" ? "batch" : "animal";
                             setSaleItems((items) => items.map((current, index) => index === itemIndex
-                              ? { ...current, kind: value, record_id: "", quantity: value === "animal" ? "1" : "" }
-                              : current))
-                          }
+                              ? { ...current, kind, record_id: "", quantity: kind === "animal" ? "1" : "" }
+                              : current));
+                          }}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
