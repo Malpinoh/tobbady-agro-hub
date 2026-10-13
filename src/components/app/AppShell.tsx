@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="truncate">{user?.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={replayTour}><BookOpen className="mr-2 h-4 w-4" />Take website tour</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.dispatchEvent(new Event("tobbady:replay-tour"))}><BookOpen className="mr-2 h-4 w-4" />Take website tour</DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/operations-guide">Operations Guide</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}><LogOut className="mr-2 h-4 w-4" />Sign out</DropdownMenuItem>
