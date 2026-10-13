@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BookOpen, Building2, ClipboardCheck, Crown, FileText, ShieldCheck, Users } from "lucide-react";
+import { BookOpen, ClipboardCheck, Crown, FileText, ShieldCheck } from "lucide-react";
 import { PageHeader, Panel } from "@/components/app/PageKit";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
