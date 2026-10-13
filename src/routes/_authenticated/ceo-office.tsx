@@ -11,6 +11,7 @@ import {
 import { formatNaira } from "@/lib/access";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { formatFarmDateTime } from "@/lib/date-time";
 
 export const Route = createFileRoute("/_authenticated/ceo-office")({
   head: () => ({
@@ -1112,7 +1113,7 @@ function CEOOffice() {
                       <div className="min-w-0">
                         <h4 className="font-semibold">{visitor.visitor_name}</h4>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {visitor.organization || "No organization"} · Arrived {new Date(visitor.arrived_at).toLocaleString()}
+                          {visitor.organization || "No organization"} · Arrived {formatFarmDateTime(visitor.arrived_at)}
                         </p>
                       </div>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${visitor.departed_at ? "bg-muted text-muted-foreground" : "bg-green-500/10 text-green-700 dark:text-green-400"}`}>
@@ -1123,7 +1124,7 @@ function CEOOffice() {
                     <p className="mt-1 text-sm"><strong>Meeting with:</strong> {visitor.person_to_visit || "Not specified"}</p>
                     {visitor.departed_at && (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Checked out: {new Date(visitor.departed_at).toLocaleString()}
+                        Checked out: {formatFarmDateTime(visitor.departed_at)}
                       </p>
                     )}
                     {visitor.notes && <p className="mt-2 text-sm text-muted-foreground"><strong>Notes:</strong> {visitor.notes}</p>}
