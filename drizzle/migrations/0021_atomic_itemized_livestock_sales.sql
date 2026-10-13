@@ -31,6 +31,8 @@ DECLARE
   v_type_id uuid;
   v_description text;
   v_animal_status text;
+  v_animal_approval_status text;
+  v_batch_approval_status text;
   v_animal_tag text;
   v_batch_code text;
   v_current_quantity integer;
@@ -49,8 +51,10 @@ BEGIN
     RAISE EXCEPTION 'Select the sale date';
   END IF;
 
-  IF jsonb_typeof(p_items) IS DISTINCT FROM 'array'
-     OR jsonb_array_length(p_items) = 0 THEN
+  IF jsonb_typeof(p_items) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'Sale items must be provided as a list';
+  END IF;
+  IF jsonb_array_length(p_items) = 0 THEN
     RAISE EXCEPTION 'Add at least one livestock item to the sale';
   END IF;
 
@@ -71,14 +75,17 @@ BEGIN
         RAISE EXCEPTION 'Individual-animal sale items must have quantity 1';
       END IF;
 
-      SELECT a.status, a.tag_number
-      INTO v_animal_status, v_animal_tag
+      SELECT a.status, a.approval_status, a.tag_number
+      INTO v_animal_status, v_animal_approval_status, v_animal_tag
       FROM public.animals a
       WHERE a.id = v_record_id
       FOR UPDATE;
 
       IF NOT FOUND THEN
         RAISE EXCEPTION 'The selected animal could not be found';
+      END IF;
+      IF v_animal_approval_status <> 'approved' THEN
+        RAISE EXCEPTION 'Animal % has not been approved for farm operations', v_animal_tag;
       END IF;
       IF v_animal_status <> 'active' THEN
         RAISE EXCEPTION 'Animal % is not active and cannot be sold', v_animal_tag;
@@ -88,14 +95,17 @@ BEGIN
         RAISE EXCEPTION 'Batch sale quantity must be a positive whole number';
       END IF;
 
-      SELECT b.current_quantity, b.initial_quantity, b.acquisition_cost, b.batch_code
-      INTO v_current_quantity, v_initial_quantity, v_batch_cost, v_batch_code
+      SELECT b.current_quantity, b.initial_quantity, b.acquisition_cost, b.batch_code, b.approval_status
+      INTO v_current_quantity, v_initial_quantity, v_batch_cost, v_batch_code, v_batch_approval_status
       FROM public.animal_batches b
       WHERE b.id = v_record_id AND b.status = 'active'
       FOR UPDATE;
 
       IF NOT FOUND THEN
         RAISE EXCEPTION 'The selected batch could not be found or is not active';
+      END IF;
+      IF v_batch_approval_status <> 'approved' THEN
+        RAISE EXCEPTION 'Batch % has not been approved for farm operations', v_batch_code;
       END IF;
       IF v_quantity > v_current_quantity THEN
         RAISE EXCEPTION 'Batch % has only % animals remaining', v_batch_code, v_current_quantity;
