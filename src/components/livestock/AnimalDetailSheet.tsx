@@ -156,7 +156,7 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
       const { error } = await supabase.from("animals").update(patch).eq("id", animal.id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success("Record updated"); void qc.invalidateQueries({ queryKey: livestockKeys.all }); onClose(); setNote(""); setPrice(""); },
+    onSuccess: () => { toast.success("Record updated"); void Promise.all([qc.invalidateQueries({ queryKey: livestockKeys.all }), qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }), qc.invalidateQueries({ queryKey: ["reports-animals"] }), qc.invalidateQueries({ queryKey: ["reports-sales"] })]); onClose(); setNote(""); setPrice(""); },
     onError: (e) => toast.error(friendlyError(e)),
   });
 
