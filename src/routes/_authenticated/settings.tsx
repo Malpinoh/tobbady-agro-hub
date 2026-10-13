@@ -1208,7 +1208,7 @@ function ResetTestDataSection() {
     },
     onSuccess: async () => {
       setConfirmation("");
-      setMessage("Test data has been reset. An automatic backup was saved in Backup History. User accounts, roles, permissions, the farm profile and livestock types were preserved.");
+      setMessage("Operational test data has been reset and an automatic backup was saved in Backup History. Breed definitions, farm sections, livestock types and categories, staff accounts, roles, permissions, and the official farm profile were preserved.");
       await queryClient.invalidateQueries({});
       await refreshBackups();
     },
@@ -1435,7 +1435,7 @@ function ResetTestDataSection() {
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold">Reset Test Data</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Permanently remove operational test records from livestock, batches and movements, sales, inventory, income and expenses, customers, suppliers, employees, documents, notifications, secretary records, approvals, audit logs, breeds and farm sections.
+              Permanently remove operational test records such as livestock, batches and movements, sales, inventory, income and expenses, customers, suppliers, employees, documents, notifications, secretary records and approvals. Breed definitions, farm sections, livestock types and categories, staff roles and permissions, and the official farm profile are preserved.
             </p>
             <p className="mt-2 text-sm font-medium">
               A verified automatic backup is created before reset. If backup creation fails, the reset is cancelled. Staff accounts, roles, permissions, the official farm profile and livestock types are preserved.
