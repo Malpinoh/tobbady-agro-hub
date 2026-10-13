@@ -1106,6 +1106,7 @@ export type Database = {
         Row: {
           animal_id: string | null
           batch_id: string | null
+          cost_total: number | null
           created_at: string
           description: string | null
           id: string
@@ -1113,6 +1114,7 @@ export type Database = {
           livestock_type_id: string | null
           quantity: number
           sale_id: string
+          unit_cost_at_sale: number
           unit_price: number
         }
         Insert: {
@@ -1125,6 +1127,7 @@ export type Database = {
           livestock_type_id?: string | null
           quantity?: number
           sale_id: string
+          unit_cost_at_sale?: number
           unit_price?: number
         }
         Update: {
@@ -1137,6 +1140,7 @@ export type Database = {
           livestock_type_id?: string | null
           quantity?: number
           sale_id?: string
+          unit_cost_at_sale?: number
           unit_price?: number
         }
         Relationships: [
@@ -1424,6 +1428,21 @@ export type Database = {
         Returns: undefined
       }
       create_platform_backup: { Args: { p_reason?: string }; Returns: string }
+      create_livestock_sale: {
+        Args: {
+          p_amount_paid: number
+          p_customer_id: string | null
+          p_items: Json
+          p_notes: string | null
+          p_sale_date: string
+        }
+        Returns: {
+          amount_paid: number
+          invoice_number: string
+          sale_id: string
+          total_amount: number
+        }[]
+      }
       has_permission: {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
