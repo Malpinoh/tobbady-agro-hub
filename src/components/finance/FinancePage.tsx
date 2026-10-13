@@ -330,6 +330,36 @@ const paidExpenses = expenses
     }
   }
 
+  async function markExpensePaid(expense: ExpenseRecord) {
+    if (!canManage) {
+      alert("You do not have permission to record expense payments.");
+      return;
+    }
+    if (expense.status.toLowerCase() !== "approved" || expense.payment_status.toLowerCase() === "paid") return;
+
+    setReviewingId(expense.id);
+    try {
+      const { error } = await supabase
+        .from("expenses")
+        .update({ payment_status: "paid", updated_at: new Date().toISOString() })
+        .eq("id", expense.id)
+        .eq("status", "approved")
+        .neq("payment_status", "paid");
+      if (error) throw error;
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
+      ]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not record the expense payment.");
+    } finally {
+      setReviewingId(null);
+    }
+  }
+
   async function reviewExpense(
     expense: ExpenseRecord,
     status: "approved" | "rejected",
@@ -409,7 +439,7 @@ const paidExpenses = expenses
           </div>
           <div className="mt-3 text-2xl font-semibold">{formatNaira(totalIncome)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Cash received, including payments linked to sales
+            Cash actually received, including linked sale payments; not the full invoice value
           </p>
         </div>
 
@@ -447,7 +477,7 @@ const paidExpenses = expenses
           </div>
           <div className="mt-3 text-2xl font-semibold">{formatNaira(netCashMovement)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Income received minus expenses marked paid. This is not a bank balance and excludes any opening cash balance.
+            Income received minus expenses marked paid. This is net recorded cash movement, not a bank balance; no opening balance is included.
           </p>
         </div>
 
@@ -543,13 +573,13 @@ const paidExpenses = expenses
                 <th className="p-3 font-medium">Reference</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Status</th>
-                {canApprove && <th className="p-3 font-medium">Approval</th>}
+                {canApprove && <th className="p-3 font-medium">Approval / payment</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={canApprove ? 8 : 7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={canApprove || canManage ? 8 : 7} className="p-8 text-center text-muted-foreground">
                     Loading finance records...
                   </td>
                 </tr>
@@ -559,7 +589,7 @@ const paidExpenses = expenses
                     <DollarSign className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                     <p className="font-medium">No finance records found</p>
                     <p className="mt-1 text-muted-foreground">
-                      Record sales in Sales and expenses here. Sale receipts appear automatically in this ledger.
+                      Record sales in Sales and expenses here. Sale payments appear automatically in this ledger; approve expenses, then mark them paid when money leaves the farm.
                     </p>
                   </td>
                 </tr>
@@ -602,9 +632,9 @@ const paidExpenses = expenses
                           {record.status}
                         </span>
                       </td>
-                      {canApprove && (
+                      {(canApprove || canManage) && (
                         <td className="p-3">
-                          {expense?.status === "pending" ? (
+                          {canApprove && expense?.status.toLowerCase() === "pending" ? (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
@@ -622,6 +652,12 @@ const paidExpenses = expenses
                                 Reject
                               </Button>
                             </div>
+                          ) : canManage && expense && expense.status.toLowerCase() === "approved" && expense.payment_status.toLowerCase() !== "paid" ? (
+                            <Button size="sm" variant="outline" disabled={reviewingId === expense.id} onClick={() => markExpensePaid(expense)}>
+                              {reviewingId === expense.id ? "Saving..." : "Mark paid"}
+                            </Button>
+                          ) : expense?.payment_status.toLowerCase() === "paid" ? (
+                            <span className="text-green-700 text-xs font-medium">Paid</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
