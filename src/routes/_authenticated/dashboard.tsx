@@ -284,7 +284,7 @@ function Dashboard() {
                 <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {label}
                 </div>
-                <div className={`mt-2 font-display text-2xl font-bold tabular-nums ${label.includes("Expense") ? "text-red-600" : label.includes("Profit") ? (data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700") : label.includes("Livestock") ? "text-blue-600" : ""}`}>
+                <div className={`mt-2 font-display text-2xl font-bold tabular-nums ${label.includes("Cost of Livestock") ? "text-amber-700" : label.includes("Expense") ? "text-red-600" : label.includes("Profit") ? (data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700") : label.includes("Livestock") ? "text-blue-600" : ""}`}>
                   {value}
                 </div>
               </div>
