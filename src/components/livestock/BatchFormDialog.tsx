@@ -343,7 +343,7 @@ export function BatchFormDialog({
             </Field>
 
             <Field
-              label="Acquisition cost (₦)"
+              label="Purchase cost (₦)"
               error={errors.acquisition_cost}
             >
               <Input
