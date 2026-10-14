@@ -393,8 +393,8 @@ function ProcurementContent() {
       const { error } = await supabase.rpc("record_procurement_receipt", {
         p_item_id: item.id,
         p_quantity: quantity,
-        p_unit_cost: unitCost,
-        p_supplier_id: receivedForm.supplier_id || null,
+        p_unit_cost: unitCost ?? undefined,
+        p_supplier_id: receivedForm.supplier_id || undefined,
         p_reference: reference,
         p_notes: receivedForm.notes.trim() || "Goods received",
       });

@@ -48,7 +48,7 @@ export function PlatformTour({ onOpenNavigation }: { onOpenNavigation?: () => vo
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
-  const step = STEPS[stepIndex];
+  const step = STEPS[stepIndex] ?? STEPS[0]!;
 
   const locateTarget = useCallback(() => {
     if (!open) return;

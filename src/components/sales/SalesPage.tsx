@@ -354,10 +354,10 @@ function SalesContent() {
     setSaving(true);
     try {
       const { error } = await supabase.rpc("create_livestock_sale", {
-        p_customer_id: saleForm.customer_id || null,
+        p_customer_id: saleForm.customer_id || (null as unknown as string),
         p_sale_date: saleForm.sale_date,
         p_amount_paid: paid,
-        p_notes: saleForm.notes.trim() || null,
+        p_notes: saleForm.notes.trim() || (null as unknown as string),
         p_items: saleItems.map((item) => ({
           kind: item.kind,
           record_id: item.record_id,

@@ -58,7 +58,7 @@ function formatActivityDescription(item: {
     delete: "Deleted",
   };
   const action = (item.action ?? "").toLowerCase();
-  const verb = actionLabels[action] ?? (action ? action[0].toUpperCase() + action.slice(1) : "Changed");
+  const verb = actionLabels[action] ?? (action ? action.charAt(0).toUpperCase() + action.slice(1) : "Changed");
   const tableLabels: Record<string, string> = {
     animals: "animal record",
     animal_batches: "animal batch",

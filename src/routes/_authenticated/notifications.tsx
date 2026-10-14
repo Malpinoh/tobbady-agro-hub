@@ -341,7 +341,7 @@ async function publishNotification(event: React.FormEvent<HTMLFormElement>) {
               <select
                 id="announcement-recipient"
                 value={announcementRole}
-                onChange={(event) => setAnnouncementRole(event.target.value)}
+                onChange={(event) => setAnnouncementRole(event.target.value as typeof announcementRole)}
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               >
                 <option value="all">Everyone</option>
