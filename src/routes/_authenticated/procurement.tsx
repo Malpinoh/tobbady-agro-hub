@@ -4,14 +4,14 @@ import ProcurementPage from "@/components/procurement/ProcurementPage";
 export const Route = createFileRoute("/_authenticated/procurement")({
   head: () => ({
     meta: [
-      { title: "Suppliers & Procurement — TOBADDY AGRO LIVESTOCK" },
+      { title: "Suppliers & Purchases — TOBADDY AGRO LIVESTOCK" },
       {
         name: "description",
         content: "Manage suppliers, purchasing and deliveries.",
       },
       {
         property: "og:title",
-        content: "Suppliers & Procurement — TOBADDY AGRO LIVESTOCK",
+        content: "Suppliers & Purchases — TOBADDY AGRO LIVESTOCK",
       },
       {
         property: "og:description",
