@@ -4,7 +4,7 @@ import { activityQuery } from "@/lib/livestock";
 
 const FIELDS: Record<string, string> = {
   status: "Status", farm_section_id: "Location", estimated_value: "Estimated value", breed_id: "Breed",
-  tag_number: "Tag number", current_quantity: "Current quantity", notes: "Notes", acquisition_cost: "Acquisition cost",
+  tag_number: "Tag number", current_quantity: "Current quantity", notes: "Notes", acquisition_cost: "Purchase cost",
 };
 
 function describe(row: { action: string; old_values: unknown; new_values: unknown; description: string | null }) {
