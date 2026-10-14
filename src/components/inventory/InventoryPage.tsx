@@ -344,8 +344,8 @@ function InventoryContent() {
         p_item_id: item.id,
         p_transaction_type: transactionType,
         p_quantity: transactionQuantity,
-        p_unit_cost: enteredCost ?? undefined,
-        p_reference: movementReference.trim() || undefined,
+        ...(enteredCost != null ? { p_unit_cost: enteredCost } : {}),
+        ...(movementReference.trim() ? { p_reference: movementReference.trim() } : {}),
         p_notes:
           movementType === "count"
             ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()

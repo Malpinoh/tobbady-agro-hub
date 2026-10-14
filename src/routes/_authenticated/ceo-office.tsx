@@ -438,7 +438,7 @@ function CEOOffice() {
         {
           p_approval_id: id,
           p_spent_on: spentOn,
-          p_reference: reference.trim() || undefined,
+          ...(reference.trim() ? { p_reference: reference.trim() } : {}),
           p_category: category.trim(),
         }
       );
