@@ -58,7 +58,12 @@ type InventoryTransaction = {
   notes: string | null;
   reference: string | null;
   unit_cost: number | null;
+  animal_id?: string | null;
+  batch_id?: string | null;
 };
+
+type ActiveAnimal = { id: string; tag_number: string };
+type ActiveBatch = { id: string; batch_code: string; current_quantity: number };
 
 type FeedingExpense = {
   id: string;
@@ -102,6 +107,9 @@ function InventoryContent() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [selectedItemId, setSelectedItemId] = useState("");
   const [movementType, setMovementType] = useState("received");
+  const [feedUsageTarget, setFeedUsageTarget] = useState("general");
+  const [feedAnimalId, setFeedAnimalId] = useState("");
+  const [feedBatchId, setFeedBatchId] = useState("");
   const [movementQuantity, setMovementQuantity] = useState("");
   const [actualCount, setActualCount] = useState("");
   const [movementCost, setMovementCost] = useState("");
@@ -137,7 +145,36 @@ function InventoryContent() {
     },
   });
 
-   const feedingExpensesQuery = useQuery({
+   const activeAnimalsQuery = useQuery({
+    queryKey: ["inventory-feed-active-animals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("animals")
+        .select("id, tag_number")
+        .eq("status", "active")
+        .eq("approval_status", "approved")
+        .order("tag_number");
+      if (error) throw error;
+      return (data ?? []) as ActiveAnimal[];
+    },
+  });
+
+  const activeBatchesQuery = useQuery({
+    queryKey: ["inventory-feed-active-batches"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("animal_batches")
+        .select("id, batch_code, current_quantity")
+        .eq("status", "active")
+        .eq("approval_status", "approved")
+        .gt("current_quantity", 0)
+        .order("batch_code");
+      if (error) throw error;
+      return (data ?? []) as ActiveBatch[];
+    },
+  });
+
+  const feedingExpensesQuery = useQuery({
     queryKey: ["inventory-feeding-expenses"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -152,6 +189,8 @@ function InventoryContent() {
 
   const items = itemsQuery.data ?? [];
   const transactions = transactionsQuery.data ?? [];
+  const activeAnimals = activeAnimalsQuery.data ?? [];
+  const activeBatches = activeBatchesQuery.data ?? [];
   const feedingExpenses = feedingExpensesQuery.data ?? [];
   const activeFeedExpenses = feedingExpenses.filter(
     (expense) => !["rejected", "cancelled", "canceled", "void"].includes((expense.status ?? "").toLowerCase())
@@ -175,6 +214,24 @@ function InventoryContent() {
     const unitCost = transaction.unit_cost ?? item?.unit_cost ?? 0;
     return sum + Number(transaction.quantity || 0) * Number(unitCost || 0);
   }, 0);
+  const isKgFeed = (item: InventoryItem | undefined) =>
+    (item?.category ?? "").trim().toLowerCase() === "feed"
+    && (item?.unit ?? "").trim().toLowerCase() === "kg";
+  const kgFeedUsedTransactions = transactions.filter((transaction) => {
+    const item = itemById.get(transaction.item_id);
+    return transaction.transaction_type === "used" && isKgFeed(item);
+  });
+  const individualAnimalFeedKg = kgFeedUsedTransactions
+    .filter((transaction) => !!transaction.animal_id)
+    .reduce((sum, transaction) => sum + Number(transaction.quantity || 0), 0);
+  const batchFeedKg = kgFeedUsedTransactions
+    .filter((transaction) => !!transaction.batch_id)
+    .reduce((sum, transaction) => sum + Number(transaction.quantity || 0), 0);
+  const totalFeedKgUsed = kgFeedUsedTransactions
+    .reduce((sum, transaction) => sum + Number(transaction.quantity || 0), 0);
+  const generalFeedKg = kgFeedUsedTransactions
+    .filter((transaction) => !transaction.animal_id && !transaction.batch_id)
+    .reduce((sum, transaction) => sum + Number(transaction.quantity || 0), 0);
   const selectedItem = items.find((item) => item.id === selectedItemId);
 
   const lowStockItems = items.filter(
@@ -226,6 +283,9 @@ function InventoryContent() {
   function openMovement(item?: InventoryItem) {
     setSelectedItemId(item?.id ?? items[0]?.id ?? "");
     setMovementType("received");
+    setFeedUsageTarget("general");
+    setFeedAnimalId("");
+    setFeedBatchId("");
     setMovementQuantity("");
     setActualCount("");
     setMovementCost("");
@@ -395,6 +455,8 @@ function InventoryContent() {
           movementType === "count"
             ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()
             : movementNotes.trim() || "",
+        p_animal_id: movementType === "used" && feedUsageTarget === "animal" ? feedAnimalId : null,
+        p_batch_id: movementType === "used" && feedUsageTarget === "batch" ? feedBatchId : null,
       });
 
       if (error) throw error;
@@ -480,6 +542,37 @@ function InventoryContent() {
           <p className="mt-1 text-xs text-muted-foreground">All recorded stock movements</p>
         </div>
       </div>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Feed used (kg)</h2>
+          <p className="text-sm text-muted-foreground">
+            Total kilograms of Feed recorded as used from stock. Individual and batch totals include usage assigned to them when the movement was recorded.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Feed used for individual animals</p>
+            <p className="mt-3 text-2xl font-semibold">{individualAnimalFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <p className="mt-1 text-xs text-muted-foreground">Feed usage assigned to individual animals</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Feed used for batches</p>
+            <p className="mt-3 text-2xl font-semibold">{batchFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <p className="mt-1 text-xs text-muted-foreground">Feed usage assigned to livestock batches</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Total feed used</p>
+            <p className="mt-3 text-2xl font-semibold">{totalFeedKgUsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <p className="mt-1 text-xs text-muted-foreground">All recorded feed usage, including general/unassigned usage</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">General / not assigned</p>
+            <p className="mt-3 text-2xl font-semibold">{generalFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <p className="mt-1 text-xs text-muted-foreground">Feed usage without an animal or batch selected</p>
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-3">
         <div>
@@ -677,13 +770,14 @@ function InventoryContent() {
                 <th className="p-3 font-medium">Item</th>
                 <th className="p-3 font-medium">What changed</th>
                 <th className="p-3 font-medium">Quantity</th>
+                <th className="p-3 font-medium">Feed used for</th>
                 <th className="p-3 font-medium">Reference / notes</th>
               </tr>
             </thead>
             <tbody>
               {transactionsQuery.isLoading ? (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
                     Loading movement history...
                   </td>
                 </tr>
@@ -717,6 +811,13 @@ function InventoryContent() {
                       </td>
                       <td className="p-3">
                         {transaction.quantity} {item?.unit ?? ""}
+                      </td>
+                      <td className="p-3">
+                        {transaction.animal_id
+                          ? activeAnimals.find((animal) => animal.id === transaction.animal_id)?.tag_number ?? "Individual animal"
+                          : transaction.batch_id
+                            ? activeBatches.find((batch) => batch.id === transaction.batch_id)?.batch_code ?? "Livestock batch"
+                            : "General / not assigned"}
                       </td>
                       <td className="max-w-xs p-3">
                         <div>{transaction.reference || "—"}</div>
@@ -883,6 +984,52 @@ function InventoryContent() {
                 </Select>
               </div>
 
+              {movementType === "used" && selectedItem && isKgFeed(selectedItem) && (
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="space-y-2">
+                    <Label>Who is this feed for?</Label>
+                    <Select value={feedUsageTarget} onValueChange={setFeedUsageTarget}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General farm feeding / not assigned</SelectItem>
+                        <SelectItem value="animal">One individual animal</SelectItem>
+                        <SelectItem value="batch">A livestock batch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {feedUsageTarget === "animal" && (
+                    <div className="space-y-2">
+                      <Label>Individual animal</Label>
+                      <Select value={feedAnimalId} onValueChange={setFeedAnimalId}>
+                        <SelectTrigger><SelectValue placeholder="Choose an active animal" /></SelectTrigger>
+                        <SelectContent>
+                          {activeAnimals.map((animal) => (
+                            <SelectItem key={animal.id} value={animal.id}>{animal.tag_number}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {activeAnimals.length === 0 && <p className="text-xs text-muted-foreground">No active approved individual animals were found.</p>}
+                    </div>
+                  )}
+                  {feedUsageTarget === "batch" && (
+                    <div className="space-y-2">
+                      <Label>Livestock batch</Label>
+                      <Select value={feedBatchId} onValueChange={setFeedBatchId}>
+                        <SelectTrigger><SelectValue placeholder="Choose an active batch" /></SelectTrigger>
+                        <SelectContent>
+                          {activeBatches.map((batch) => (
+                            <SelectItem key={batch.id} value={batch.id}>
+                              {batch.batch_code} — {batch.current_quantity} animals/birds
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {activeBatches.length === 0 && <p className="text-xs text-muted-foreground">No active approved livestock batches were found.</p>}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {movementType === "count" ? (
                 <div className="space-y-2">
                   <Label>Quantity you counted ({selectedItem?.unit ?? "units"})</Label>
@@ -923,6 +1070,12 @@ function InventoryContent() {
                 </div>
               )}
 
+              {movementType === "used" && selectedItem && isKgFeed(selectedItem) && feedUsageTarget === "animal" && !feedAnimalId && (
+                <p className="text-sm text-destructive">Choose the individual animal for this feed usage, or select general farm feeding.</p>
+              )}
+              {movementType === "used" && selectedItem && isKgFeed(selectedItem) && feedUsageTarget === "batch" && !feedBatchId && (
+                <p className="text-sm text-destructive">Choose the livestock batch for this feed usage, or select general farm feeding.</p>
+              )}
               <div className="space-y-2">
                 <Label>Reference / invoice number</Label>
                 <Input
@@ -945,7 +1098,7 @@ function InventoryContent() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setMovementDialog(false)}>Cancel</Button>
-            <Button disabled={saving || items.length === 0} onClick={saveMovement}>
+            <Button disabled={saving || items.length === 0 || (movementType === "used" && isKgFeed(selectedItem) && ((feedUsageTarget === "animal" && !feedAnimalId) || (feedUsageTarget === "batch" && !feedBatchId)))} onClick={saveMovement}>
               {saving ? "Saving..." : "Save movement"}
             </Button>
           </DialogFooter>
