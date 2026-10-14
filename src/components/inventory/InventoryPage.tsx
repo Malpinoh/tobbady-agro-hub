@@ -6,6 +6,10 @@ import {
   Boxes,
   History,
   PackagePlus,
+  Beef,
+  Bird,
+  Wheat,
+  CircleHelp,
   Plus,
   Search,
   TrendingDown,
@@ -509,7 +513,7 @@ function InventoryContent() {
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-sm">Stock items</span>
-            <Boxes className="h-5 w-5" />
+            <Boxes className="h-5 w-5 text-blue-600" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{items.length}</div>
           <p className="mt-1 text-xs text-muted-foreground">Different inventory items</p>
@@ -518,7 +522,7 @@ function InventoryContent() {
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-sm">Low-stock alerts</span>
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{lowStockItems.length}</div>
           <p className="mt-1 text-xs text-muted-foreground">At or below the low-stock limit</p>
@@ -527,7 +531,7 @@ function InventoryContent() {
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-sm">Inventory value</span>
-            <PackagePlus className="h-5 w-5" />
+            <PackagePlus className="h-5 w-5 text-violet-600" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{formatNaira(totalValue)}</div>
           <p className="mt-1 text-xs text-muted-foreground">Based on recorded unit costs</p>
@@ -536,7 +540,7 @@ function InventoryContent() {
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-sm">Recent movements</span>
-            <History className="h-5 w-5" />
+            <History className="h-5 w-5 text-cyan-600" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{transactions.length}</div>
           <p className="mt-1 text-xs text-muted-foreground">All recorded stock movements</p>
@@ -552,23 +556,35 @@ function InventoryContent() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-sm text-muted-foreground">Feed used for individual animals</p>
-            <p className="mt-3 text-2xl font-semibold">{individualAnimalFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Feed used for individual animals</p>
+              <span className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950"><Beef className="h-5 w-5 text-emerald-700 dark:text-emerald-300" /></span>
+            </div>
+            <p className="text-2xl font-semibold">{individualAnimalFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
             <p className="mt-1 text-xs text-muted-foreground">Feed usage assigned to individual animals</p>
           </div>
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-sm text-muted-foreground">Feed used for batches</p>
-            <p className="mt-3 text-2xl font-semibold">{batchFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Feed used for batches</p>
+              <span className="rounded-lg bg-orange-100 p-2 dark:bg-orange-950"><Bird className="h-5 w-5 text-orange-700 dark:text-orange-300" /></span>
+            </div>
+            <p className="text-2xl font-semibold">{batchFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
             <p className="mt-1 text-xs text-muted-foreground">Feed usage assigned to livestock batches</p>
           </div>
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-sm text-muted-foreground">Total feed used</p>
-            <p className="mt-3 text-2xl font-semibold">{totalFeedKgUsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Total feed used</p>
+              <span className="rounded-lg bg-blue-100 p-2 dark:bg-blue-950"><Wheat className="h-5 w-5 text-blue-700 dark:text-blue-300" /></span>
+            </div>
+            <p className="text-2xl font-semibold">{totalFeedKgUsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
             <p className="mt-1 text-xs text-muted-foreground">All recorded feed usage, including general/unassigned usage</p>
           </div>
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-sm text-muted-foreground">General / not assigned</p>
-            <p className="mt-3 text-2xl font-semibold">{generalFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">General / not assigned</p>
+              <span className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800"><CircleHelp className="h-5 w-5 text-slate-700 dark:text-slate-300" /></span>
+            </div>
+            <p className="text-2xl font-semibold">{generalFeedKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</p>
             <p className="mt-1 text-xs text-muted-foreground">Feed usage without an animal or batch selected</p>
           </div>
         </div>
