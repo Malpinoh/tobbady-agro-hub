@@ -125,7 +125,7 @@ export function BatchDetailSheet({
                     onClick={() => setAction("mortality")}
                   >
                     <Skull className="mr-1.5 h-3.5 w-3.5" />
-                    Mortality
+                    Deaths
                   </Button>
 
                   <Button
@@ -160,7 +160,7 @@ export function BatchDetailSheet({
                     </span>
                   </InfoRow>
 
-                  <InfoRow label="Mortality">
+                  <InfoRow label="Deaths">
                     <span className="text-destructive">
                       {breakdown?.mortality.toLocaleString() ?? "0"}
                     </span>
@@ -210,7 +210,7 @@ export function BatchDetailSheet({
                 </Section>
 
                 <Section title="Financial">
-                  <InfoRow label="Acquisition cost">
+                  <InfoRow label="Purchase cost">
                     {batch.acquisition_cost != null
                       ? `₦${Number(batch.acquisition_cost).toLocaleString(
                           "en-NG",
@@ -434,7 +434,7 @@ function BatchActionDialog({
     onSuccess: () => {
       toast.success(
         action === "mortality"
-          ? "Mortality recorded"
+          ? "Deaths recorded"
           : action === "sale"
             ? "Sales invoice created and batch stock updated"
             : "Batch transfer recorded",

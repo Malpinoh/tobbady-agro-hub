@@ -572,7 +572,7 @@ function CEOOffice() {
                         {item.name}
                       </span>
                       <StatusBadge tone="warning">
-                        Reorder needed
+                        Low stock
                       </StatusBadge>
                     </div>
                   ))}

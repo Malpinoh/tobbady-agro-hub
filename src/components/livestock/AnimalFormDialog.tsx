@@ -46,7 +46,7 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
       for (const k of ["acquisition_cost", "estimated_value"] as const) {
         if (f[k] && (isNaN(Number(f[k])) || Number(f[k]) < 0)) e[k] = "Enter a valid amount";
       }
-      if (f.date_of_birth && f.acquired_on && f.acquired_on < f.date_of_birth) e.acquired_on = "Acquisition can't be before birth";
+      if (f.date_of_birth && f.acquired_on && f.acquired_on < f.date_of_birth) e.acquired_on = "The date obtained cannot be before the date of birth";
       if (tag && !e.tag_number) {
         const { data } = await supabase.from("animals").select("id").ilike("tag_number", tag).limit(1);
         if (data?.length && data[0]!.id !== animal?.id) e.tag_number = "That tag number is already in use";
@@ -85,10 +85,10 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{animal ? `Edit ${animal.tag_number}` : "Add animal"}</DialogTitle>
-          <DialogDescription>Individually tracked livestock, identified by tag number. {animal ? "Changes will be sent to the CEO/Administrator for approval." : ""}</DialogDescription>
+          <DialogDescription>This record is for one animal, identified by its tag number. {animal ? "Changes will be sent to the CEO/Administrator for approval." : ""}</DialogDescription>
         </DialogHeader>
         {!types.length ? (
-          <p className="text-sm text-muted-foreground">No active individually tracked livestock types exist. Add one under Types &amp; Breeds.</p>
+          <p className="text-sm text-muted-foreground">There are no active animal types for individual records. Add an animal type under Animal Types &amp; Breeds.</p>
         ) : (
           <form id="animal-form" className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
             {animal && <Field label="Reason for edit request" required className="sm:col-span-2"><Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Explain what is incorrect and why it needs changing (minimum 5 characters)" /></Field>}
@@ -105,8 +105,8 @@ export function AnimalFormDialog({ open, onOpenChange, animal, refData }: { open
               <SimpleSelect value={f.sex} onChange={set("sex")} allowNone noneLabel="Unknown" options={[{ value: "male", label: "Male" }, { value: "female", label: "Female" }]} />
             </Field>
             <Field label="Date of birth"><Input type="date" value={f.date_of_birth} onChange={(e) => set("date_of_birth")(e.target.value)} /></Field>
-            <Field label="Acquisition date" error={errors.acquired_on}><Input type="date" value={f.acquired_on} onChange={(e) => set("acquired_on")(e.target.value)} /></Field>
-            <Field label="Acquisition cost (₦)" error={errors.acquisition_cost}><Input inputMode="decimal" value={f.acquisition_cost} onChange={(e) => set("acquisition_cost")(e.target.value)} /></Field>
+            <Field label="Date obtained" error={errors.acquired_on}><Input type="date" value={f.acquired_on} onChange={(e) => set("acquired_on")(e.target.value)} /></Field>
+            <Field label="Purchase cost (₦)" error={errors.acquisition_cost}><Input inputMode="decimal" value={f.acquisition_cost} onChange={(e) => set("acquisition_cost")(e.target.value)} /></Field>
             <Field label="Estimated current value (₦)" error={errors.estimated_value}><Input inputMode="decimal" value={f.estimated_value} onChange={(e) => set("estimated_value")(e.target.value)} /></Field>
             <SectionPicker   farms={refData.farms}   sections={refData.sections}   farmId={f.farm_id}   sectionId={f.farm_section_id}   onFarm={set("farm_id")}   onSection={set("farm_section_id")} />  <Field label="Specific location (optional)">   <Input     value={f.location_description}     onChange={(e) => set("location_description")(e.target.value)}     placeholder="e.g. Open Compound or Behind Poultry House"   /> </Field>
             <Field label="Status">

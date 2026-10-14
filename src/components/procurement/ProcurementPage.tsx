@@ -427,7 +427,7 @@ function ProcurementContent() {
   }[] = [
     { id: "suppliers", label: "Suppliers", icon: Users },
     { id: "requests", label: "Purchase Requests", icon: ClipboardList },
-    { id: "orders", label: "Purchase Orders", icon: ShoppingCart },
+    { id: "orders", label: "Orders & Purchases", icon: ShoppingCart },
     { id: "received", label: "Goods Received", icon: PackageCheck },
   ];
 
@@ -435,7 +435,7 @@ function ProcurementContent() {
     <RequirePermission perm="procurement.view">
       <div className="space-y-6">
         <PageHeader
-          title="Suppliers & Procurement"
+          title="Suppliers & Purchases"
           description="Manage suppliers, purchasing and deliveries for the farm."
           actions={
             <Button variant="outline" onClick={() => void refresh()} disabled={loading}>
@@ -447,7 +447,7 @@ function ProcurementContent() {
 
         {queryError && (
           <div className="rounded-lg border border-destructive/40 p-4 text-sm">
-            Could not load procurement data:{" "}
+            Could not load supplier and purchase records:{" "}
             {queryError instanceof Error ? queryError.message : "Try refreshing."}
           </div>
         )}
@@ -559,7 +559,7 @@ function ProcurementContent() {
 
         {loading ? (
           <div className="rounded-xl border p-10 text-center text-muted-foreground">
-            Loading procurement data...
+            Loading supplier and purchase records...
           </div>
         ) : (
           <>
@@ -596,7 +596,7 @@ function ProcurementContent() {
             {(section === "requests" || section === "orders") && (
               <>
                 <p className="text-xs text-muted-foreground">
-                  These records use the existing expenses table. Requests start as pending; approved records are shown under Purchase Orders. They are not separate formal purchase-order records yet.
+                  Purchase requests are saved as pending until approved. Approved requests appear under Orders & Purchases. This page does not create a separate formal purchase-order document.
                 </p>
                 <div className="overflow-x-auto rounded-xl border">
                   <table className="w-full text-left text-sm">
