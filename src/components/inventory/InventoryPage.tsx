@@ -349,7 +349,7 @@ function InventoryContent() {
         p_notes:
           movementType === "count"
             ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()
-            : movementNotes.trim() || null,
+            : movementNotes.trim() || "",
       });
 
       if (error) throw error;
