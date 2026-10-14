@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Bell, BookOpen, LogOut, Menu } from "lucide-react";
 import { PlatformTour } from "./PlatformTour";
 import { useQueryClient } from "@tanstack/react-query";
@@ -81,6 +83,55 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { profile, user, roles, signOut } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const unreadNotificationsQuery = useQuery({
+    queryKey: ["notification-unread-count", user?.id, roles],
+    enabled: !!user,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("notifications")
+        .select("id, user_id, target_role, read_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+
+      const visible = (rows ?? []).filter(
+        (item) =>
+          item.user_id === user!.id ||
+          (item.user_id === null &&
+            (item.target_role === null || roles.includes(item.target_role))),
+      );
+      const sharedIds = visible
+        .filter((item) => item.user_id !== user!.id)
+        .map((item) => item.id);
+      const { data: receipts, error: receiptError } = sharedIds.length
+        ? await supabase
+            .from("notification_reads")
+            .select("notification_id")
+            .eq("user_id", user!.id)
+            .in("notification_id", sharedIds)
+        : { data: [], error: null };
+      if (receiptError) throw receiptError;
+      const readIds = new Set((receipts ?? []).map((item) => item.notification_id));
+      return visible.filter(
+        (item) => item.user_id === user!.id ? !item.read_at : !readIds.has(item.id),
+      ).length;
+    },
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`header-notifications-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
+        void qc.invalidateQueries({ queryKey: ["notification-unread-count"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "notification_reads", filter: `user_id=eq.${user.id}` }, () => {
+        void qc.invalidateQueries({ queryKey: ["notification-unread-count"] });
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [user?.id, qc]);
   const name = profile?.full_name || user?.email || "User";
   const initials = name.split(/[\s@]/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
 
@@ -109,8 +160,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
           <div className="font-display text-sm font-bold tracking-wide text-primary lg:hidden">TOBADDY AGRO</div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild aria-label="Notifications">
-              <Link to="/notifications" data-tour="nav-notifications"><Bell className="h-5 w-5" /></Link>
+            <Button variant="ghost" size="icon" asChild aria-label={`Notifications${(unreadNotificationsQuery.data ?? 0) > 0 ? `, ${unreadNotificationsQuery.data} unread` : ""}`}>
+              <Link to="/notifications" data-tour="nav-notifications" className="relative">
+                <Bell className="h-5 w-5" />
+                {(unreadNotificationsQuery.data ?? 0) > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">
+                    {(unreadNotificationsQuery.data ?? 0) > 99 ? "99+" : unreadNotificationsQuery.data}
+                  </span>
+                )}
+              </Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger data-tour="tour-profile" className="flex items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-muted">
