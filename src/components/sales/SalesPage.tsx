@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNaira } from "@/lib/access";
+import { getLocalDateInputValue } from "@/lib/date-time";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,7 +101,7 @@ function SalesContent() {
     customer_id: "",
     total_amount: "",
     amount_paid: "0",
-    sale_date: new Date().toISOString().slice(0, 10),
+    sale_date: getLocalDateInputValue(),
     notes: "",
   });
 
@@ -189,21 +190,21 @@ function SalesContent() {
     [customers],
   );
 
-  const totalSales = sales.reduce(
+  // Financial summary cards exclude cancelled, void and draft invoices; those remain visible in the invoice history.
+  const financiallyRelevantSales = sales.filter((sale) =>
+    ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase()),
+  );
+  const totalSales = financiallyRelevantSales.reduce(
     (sum, sale) => sum + Number(sale.total_amount || 0),
     0,
   );
-  const totalPaid = sales.reduce(
+  const totalPaid = financiallyRelevantSales.reduce(
     (sum, sale) => sum + Number(sale.amount_paid || 0),
     0,
   );
-  const outstanding = sales.reduce(
+  const outstanding = financiallyRelevantSales.reduce(
     (sum, sale) =>
-      sum +
-      Math.max(
-        0,
-        Number(sale.total_amount || 0) - Number(sale.amount_paid || 0),
-      ),
+      sum + Math.max(0, Number(sale.total_amount || 0) - Number(sale.amount_paid || 0)),
     0,
   );
 
@@ -259,7 +260,7 @@ function SalesContent() {
       customer_id: "",
       total_amount: "",
       amount_paid: "0",
-      sale_date: new Date().toISOString().slice(0, 10),
+      sale_date: getLocalDateInputValue(),
       notes: "",
     });
     setSaleItems([{ kind: "animal", record_id: "", quantity: "1", unit_price: "" }]);
@@ -491,7 +492,7 @@ function SalesContent() {
       <div className="space-y-6">
         <PageHeader
           title="Sales & Customers"
-          description="Manage customers, sales invoices, payments and receipts."
+          description="Invoice totals show sales revenue; payments received show cash collected; outstanding balances are still owed by customers."
           actions={
             <Button
               variant="outline"
@@ -520,7 +521,7 @@ function SalesContent() {
             icon={Users}
           />
           <SummaryCard
-            title="Total Sales"
+            title="Recognized Sales Revenue"
             value={money(totalSales)}
             icon={FileText}
           />
@@ -530,7 +531,7 @@ function SalesContent() {
             icon={Wallet}
           />
           <SummaryCard
-            title="Outstanding Balance"
+            title="Outstanding Customer Balance"
             value={money(outstanding)}
             icon={Receipt}
           />

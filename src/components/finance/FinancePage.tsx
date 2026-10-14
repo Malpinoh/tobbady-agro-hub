@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNaira } from "@/lib/access";
+import { getLocalDateInputValue } from "@/lib/date-time";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,7 +106,7 @@ function FinanceContent() {
     amount: "",
     category: "Animal feed",
     description: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateInputValue(),
     reference: "",
     livestockLink: "none",
   });
@@ -184,22 +185,21 @@ function FinanceContent() {
     .reduce((sum, record) => sum + Number(record.amount), 0);
 
   const approvedExpenses = expenses
-    .filter((record) => record.status === "approved")
+    .filter((record) => record.status.toLowerCase() === "approved")
     .reduce((sum, record) => sum + Number(record.amount), 0);
 
 const paidExpenses = expenses
-  .filter(
-    (record) =>
-      record.payment_status === "paid" &&
-      record.status !== "rejected" &&
-      record.status !== "cancelled",
-  )
-  .reduce((sum, record) => sum + Number(record.amount), 0);
+    .filter(
+      (record) =>
+        record.payment_status.toLowerCase() === "paid" &&
+        !["rejected", "cancelled", "canceled", "void"].includes(record.status.toLowerCase()),
+    )
+    .reduce((sum, record) => sum + Number(record.amount), 0);
   const pendingExpenses = expenses.filter(
     (record) => record.status === "pending",
   );
 
-  const netBalance = totalIncome - paidExpenses;
+  const netCashMovement = totalIncome - paidExpenses;
 
   const combinedRecords = useMemo(() => {
     const incomeRows = incomes.map((record) => ({
@@ -247,7 +247,7 @@ const paidExpenses = expenses
       amount: "",
       category: type === "income" ? "Livestock sales" : "Animal feed",
       description: "",
-      date: new Date().toISOString().slice(0, 10),
+      date: getLocalDateInputValue(),
       reference: "",
       livestockLink: "none",
     });
@@ -315,6 +315,7 @@ const paidExpenses = expenses
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["finance-income"] }),
         queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-expenses"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
         queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
       ]);
@@ -326,6 +327,36 @@ const paidExpenses = expenses
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function markExpensePaid(expense: ExpenseRecord) {
+    if (!canManage) {
+      alert("You do not have permission to record expense payments.");
+      return;
+    }
+    if (expense.status.toLowerCase() !== "approved" || expense.payment_status.toLowerCase() === "paid") return;
+
+    setReviewingId(expense.id);
+    try {
+      const { error } = await supabase
+        .from("expenses")
+        .update({ payment_status: "paid", updated_at: new Date().toISOString() })
+        .eq("id", expense.id)
+        .eq("status", "approved")
+        .neq("payment_status", "paid");
+      if (error) throw error;
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
+      ]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not record the expense payment.");
+    } finally {
+      setReviewingId(null);
     }
   }
 
@@ -358,6 +389,7 @@ const paidExpenses = expenses
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["finance-expenses"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports-expenses"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
         queryClient.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
       ]);
@@ -380,7 +412,7 @@ const paidExpenses = expenses
     <div className="space-y-6">
       <PageHeader
         title="Finance"
-        description="Monitor farm income, expenses, approvals and cash flow."
+        description="Track cash received, expenses and approvals. Net recorded cash movement is not a bank balance; use Reports for profit/loss."
         actions={
           canManage ? (
             <div className="flex flex-wrap gap-2">
@@ -402,12 +434,12 @@ const paidExpenses = expenses
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Total income</span>
+            <span className="text-sm">Income received</span>
             <ArrowUpCircle className="h-5 w-5" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{formatNaira(totalIncome)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Received or approved income
+            Cash actually received, including linked sale payments; not the full invoice value
           </p>
         </div>
 
@@ -427,25 +459,25 @@ const paidExpenses = expenses
 
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Approved expenses</span>
+            <span className="text-sm">Approved expense records</span>
             <ArrowDownCircle className="h-5 w-5" />
           </div>
           <div className="mt-3 text-2xl font-semibold">
             {formatNaira(approvedExpenses)}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Approved for payment
+            Includes operating expenses and livestock purchases; Reports separates livestock acquisition costs
           </p>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-sm">Net balance</span>
+            <span className="text-sm">Net recorded cash movement</span>
             <Wallet className="h-5 w-5" />
           </div>
-          <div className="mt-3 text-2xl font-semibold">{formatNaira(netBalance)}</div>
+          <div className="mt-3 text-2xl font-semibold">{formatNaira(netCashMovement)}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Income minus actual expenses paid
+            Income received minus expenses marked paid. This is net recorded cash movement, not a bank balance; no opening balance is included.
           </p>
         </div>
 
@@ -541,13 +573,13 @@ const paidExpenses = expenses
                 <th className="p-3 font-medium">Reference</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Status</th>
-                {canApprove && <th className="p-3 font-medium">Approval</th>}
+                {(canApprove || canManage) && <th className="p-3 font-medium">Approval / payment</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={canApprove ? 8 : 7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={canApprove || canManage ? 8 : 7} className="p-8 text-center text-muted-foreground">
                     Loading finance records...
                   </td>
                 </tr>
@@ -557,7 +589,7 @@ const paidExpenses = expenses
                     <DollarSign className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                     <p className="font-medium">No finance records found</p>
                     <p className="mt-1 text-muted-foreground">
-                      Record sales in Sales and expenses here. Sale receipts appear automatically in this ledger.
+                      Record sales in Sales and expenses here. Sale payments appear automatically in this ledger; approve expenses, then mark them paid when money leaves the farm.
                     </p>
                   </td>
                 </tr>
@@ -600,9 +632,9 @@ const paidExpenses = expenses
                           {record.status}
                         </span>
                       </td>
-                      {canApprove && (
+                      {(canApprove || canManage) && (
                         <td className="p-3">
-                          {expense?.status === "pending" ? (
+                          {canApprove && expense?.status.toLowerCase() === "pending" ? (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
@@ -620,6 +652,12 @@ const paidExpenses = expenses
                                 Reject
                               </Button>
                             </div>
+                          ) : canManage && expense && expense.status.toLowerCase() === "approved" && expense.payment_status.toLowerCase() !== "paid" ? (
+                            <Button size="sm" variant="outline" disabled={reviewingId === expense.id} onClick={() => markExpensePaid(expense)}>
+                              {reviewingId === expense.id ? "Saving..." : "Mark paid"}
+                            </Button>
+                          ) : expense?.payment_status.toLowerCase() === "paid" ? (
+                            <span className="text-green-700 text-xs font-medium">Paid</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}

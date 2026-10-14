@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNaira } from "@/lib/access";
+import { getLocalDateInputValue } from "@/lib/date-time";
 import {
   PageHeader,
   RequirePermission,
@@ -80,12 +81,10 @@ export function ReportsPage() {
   const { can } = useAuth();
   const [tab, setTab] = useState<ReportTab>("profit");
   const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      .toISOString()
-      .slice(0, 10),
+    getLocalDateInputValue(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
   );
   const [endDate, setEndDate] = useState(
-    new Date().toISOString().slice(0, 10),
+    getLocalDateInputValue(),
   );
 
   const incomeQuery = useQuery({
@@ -219,9 +218,21 @@ export function ReportsPage() {
       ["received", "approved"].includes(String(item.status ?? "").toLowerCase()),
   );
 
-  const expenses = (expensesQuery.data ?? []).filter(
+  const approvedExpenses = (expensesQuery.data ?? []).filter(
     (item) =>
       inPeriod(item.spent_on) && String(item.status ?? "").toLowerCase() === "approved",
+  );
+  // Livestock acquisition is an asset cost, not an operating expense. It is
+  // recognised in profit/loss through cost of livestock sold when the animal is sold.
+  const livestockAcquisitions = approvedExpenses.filter(
+    (item) => String(item.category ?? "").trim().toLowerCase() === "livestock purchase",
+  );
+  const totalLivestockAcquisitions = livestockAcquisitions.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0,
+  );
+  const expenses = approvedExpenses.filter(
+    (item) => String(item.category ?? "").trim().toLowerCase() !== "livestock purchase",
   );
 
   const totalIncome = income.reduce(
@@ -285,14 +296,18 @@ export function ReportsPage() {
       ),
   }));
 
-  const financeChartData = [...new Set([
-    ...income.map((item) => item.category),
-    ...expenses.map((item) => item.category),
-  ])].map((category) => ({
-    category,
-    income: income.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    expenses: expenses.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
-  }));
+  const financeChartData = [
+    { category: "Livestock sales", income: totalSales, expenses: 0 },
+    { category: "Cost of livestock sold", income: 0, expenses: costOfGoodsSold },
+    ...[...new Set([
+      ...income.map((item) => item.category),
+      ...expenses.map((item) => item.category),
+    ])].map((category) => ({
+      category,
+      income: income.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
+      expenses: expenses.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    })),
+  ];
 
   const livestockChartData = livestockSummary.map((item) => ({
     type: item.name,
@@ -342,7 +357,7 @@ export function ReportsPage() {
               type="date"
               value={endDate}
               min={startDate}
-              max={new Date().toISOString().slice(0, 10)}
+              max={getLocalDateInputValue()}
               onChange={(event) => setEndDate(event.target.value)}
               className="block rounded-md border bg-background px-3 py-2 text-sm"
             />
@@ -372,7 +387,7 @@ export function ReportsPage() {
           <>
             {tab === "profit" && (
               <div className="space-y-5">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                   <StatCard
                     title="Other Recognised Income"
                     value={formatNaira(totalIncome)}
@@ -386,8 +401,12 @@ export function ReportsPage() {
                     value={formatNaira(costOfGoodsSold)}
                   />
                   <StatCard
-                    title="Approved Expenses"
+                    title="Approved Operating Expenses"
                     value={formatNaira(totalExpenses)}
+                  />
+                  <StatCard
+                    title="Livestock Acquisitions (separate)"
+                    value={formatNaira(totalLivestockAcquisitions)}
                   />
                   <div className={`rounded-xl border bg-card p-5 ${netProfit < 0 ? "text-red-600" : "text-green-700"}`}>
                     <p className="text-sm text-muted-foreground">Net Profit / Loss</p>
@@ -395,7 +414,7 @@ export function ReportsPage() {
                   </div>
                 </div>
                 <div className="rounded-xl border p-4">
-                  <h2 className="mb-4 font-semibold">Income vs expenses by category</h2>
+                  <h2 className="mb-4 font-semibold">Revenue vs costs by category</h2>
                   {financeChartData.length ? (
                     <div className="h-72 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -405,8 +424,8 @@ export function ReportsPage() {
                           <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
                           <Tooltip formatter={(value) => formatNaira(Number(value ?? 0))} />
                           <Legend />
-                          <Bar dataKey="income" name="Recognised income" fill="#16a34a" />
-                          <Bar dataKey="expenses" name="Approved expenses" fill="#dc2626" />
+                          <Bar dataKey="income" name="Revenue" fill="#16a34a" />
+                          <Bar dataKey="expenses" name="Costs and approved expenses" fill="#dc2626" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -416,16 +435,21 @@ export function ReportsPage() {
                   <h2 className="border-b p-4 font-semibold">
                     Profit & Loss Breakdown
                   </h2>
+                  <div className="grid grid-cols-3 gap-2 border-b bg-muted/40 p-4 text-xs font-semibold uppercase tracking-wide">
+                    <span>Category</span><span className="text-right">Revenue</span><span className="text-right">Cost / expense</span>
+                  </div>
                   {[...new Set([
+                    "Livestock sales revenue",
+                    "Cost of livestock sold",
                     ...income.map((item) => item.category),
                     ...expenses.map((item) => item.category),
                   ])].map((category) => {
-                    const earned = income
-                      .filter((item) => item.category === category)
-                      .reduce((sum, item) => sum + Number(item.amount), 0);
-                    const spent = expenses
-                      .filter((item) => item.category === category)
-                      .reduce((sum, item) => sum + Number(item.amount), 0);
+                    const earned = category === "Livestock sales revenue"
+                      ? totalSales
+                      : income.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount), 0);
+                    const spent = category === "Cost of livestock sold"
+                      ? costOfGoodsSold
+                      : expenses.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount), 0);
                     return (
                       <div
                         key={category}
@@ -443,14 +467,11 @@ export function ReportsPage() {
                   })}
                   <div className="grid grid-cols-3 gap-2 bg-muted/40 p-4 text-sm font-semibold">
                     <span>Total</span>
-                    <span className="text-right">{formatNaira(totalIncome)}</span>
-                    <span className="text-right">{formatNaira(totalExpenses)}</span>
+                    <span className="text-right">{formatNaira(totalRecognisedRevenue)}</span>
+                    <span className="text-right">{formatNaira(totalExpenses + costOfGoodsSold)}</span>
                   </div>
                   <p className="p-4 text-xs text-muted-foreground">
-                    Net profit includes recognised non-sale income and completed livestock sales,
-                    less approved expenses and the acquisition cost of livestock sold. Payments
-                    received are shown separately from sales revenue. This is a management report,
-                    not a substitute for audited financial statements.
+                    Net profit / loss = completed livestock sales revenue + other recognised income − approved operating expenses − cost of livestock sold. Livestock purchase entries are shown separately and excluded from operating expenses to avoid counting the same acquisition cost twice; the animal/batch acquisition cost is recognised when livestock is sold. Sales revenue uses full invoice value, while cash received and outstanding balances are tracked separately. This is a management report, not a substitute for audited financial statements.
                   </p>
                 </div>
               </div>

@@ -60,7 +60,7 @@ function Dashboard() {
           .select("id, sale_date, total_amount, status"),
         supabase
           .from("expenses")
-          .select("id, spent_on, amount, status"),
+          .select("id, spent_on, amount, category, status"),
         supabase
           .from("income")
           .select("id, sale_id, category, received_on, amount, status"),
@@ -162,12 +162,16 @@ function Dashboard() {
         .reduce((sum, sale) => sum + number(sale.total_amount), 0);
 
       // Match the Profit & Loss report: only approved expenses affect this KPI.
-      const todayExpenses = expenses
-        .filter(
-          (expense) =>
-            expense.spent_on === today &&
-            String(expense.status ?? "").toLowerCase() === "approved"
-        )
+      const isLivestockPurchase = (expense: { category?: string | null }) =>
+        String(expense.category ?? "").trim().toLowerCase() === "livestock purchase";
+      const todayApprovedExpenses = expenses.filter(
+        (expense) => expense.spent_on === today && String(expense.status ?? "").toLowerCase() === "approved",
+      );
+      const todayExpenses = todayApprovedExpenses
+        .filter((expense) => !isLivestockPurchase(expense))
+        .reduce((sum, expense) => sum + number(expense.amount), 0);
+      const todayLivestockPurchases = todayApprovedExpenses
+        .filter(isLivestockPurchase)
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
       const monthOtherIncome = income
@@ -190,13 +194,14 @@ function Dashboard() {
       const monthIncome = monthOtherIncome + monthSales;
 
       // Keep Dashboard expenses aligned with Reports & Analytics (approved only).
-      const monthExpenses = expenses
-        .filter(
-          (expense) =>
-            expense.spent_on >= monthStart &&
-            expense.spent_on <= today &&
-            String(expense.status ?? "").toLowerCase() === "approved"
-        )
+      const monthApprovedExpenses = expenses.filter(
+        (expense) => expense.spent_on >= monthStart && expense.spent_on <= today && String(expense.status ?? "").toLowerCase() === "approved",
+      );
+      const monthExpenses = monthApprovedExpenses
+        .filter((expense) => !isLivestockPurchase(expense))
+        .reduce((sum, expense) => sum + number(expense.amount), 0);
+      const monthLivestockPurchases = monthApprovedExpenses
+        .filter(isLivestockPurchase)
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
       const lowStock = inventory.filter(
@@ -210,8 +215,11 @@ function Dashboard() {
         livestockValue: batchValue + animalValue,
         todaySales,
         todayExpenses,
+        todayLivestockPurchases,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
+        monthlyLivestockPurchases,
+        monthlyCostOfGoodsSold: monthCostOfGoodsSold,
         estimatedProfit: monthIncome - monthExpenses - monthCostOfGoodsSold,
         livestockSummary,
         lowStock,
@@ -220,6 +228,7 @@ function Dashboard() {
           .sort((a, b) => b.sale_date.localeCompare(a.sale_date))
           .slice(0, 5),
         recentExpenses: [...expenses]
+          .filter((expense) => String(expense.status ?? "").toLowerCase() === "approved")
           .sort((a, b) => b.spent_on.localeCompare(a.spent_on))
           .slice(0, 5),
       };
@@ -235,11 +244,14 @@ function Dashboard() {
   const stats = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
     ["Estimated Livestock Value", data ? money(data.livestockValue) : "—"],
-    ["Today's Sales", data ? money(data.todaySales) : "—"],
-    ["Today's Expenses", data ? money(data.todayExpenses) : "—"],
+    ["Today's Sales Revenue", data ? money(data.todaySales) : "—"],
+    ["Today's Operating Expenses", data ? money(data.todayExpenses) : "—"],
+    ["Today's Livestock Purchases", data ? money(data.todayLivestockPurchases) : "—"],
     ["Monthly Revenue", data ? money(data.monthlyRevenue) : "—"],
-    ["Monthly Expenses", data ? money(data.monthlyExpenses) : "—"],
-    ["Estimated Profit", data ? money(data.estimatedProfit) : "—"],
+    ["Cost of Livestock Sold", data ? money(data.monthlyCostOfGoodsSold) : "—"],
+    ["Monthly Operating Expenses", data ? money(data.monthlyExpenses) : "—"],
+    ["Monthly Livestock Purchases", data ? money(data.monthlyLivestockPurchases) : "—"],
+    ["Estimated Profit / Loss", data ? money(data.estimatedProfit) : "—"],
   ];
 
   return (
@@ -282,7 +294,7 @@ function Dashboard() {
                 <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {label}
                 </div>
-                <div className={`mt-2 font-display text-2xl font-bold tabular-nums ${label.includes("Expense") ? "text-red-600" : label.includes("Profit") ? (data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700") : label.includes("Livestock") ? "text-blue-600" : ""}`}>
+                <div className={`mt-2 font-display text-2xl font-bold tabular-nums ${label.includes("Cost of Livestock") || label.includes("Livestock Purchase") ? "text-amber-700" : label.includes("Expense") ? "text-red-600" : label.includes("Profit") ? (data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700") : label.includes("Livestock") ? "text-blue-600" : ""}`}>
                   {value}
                 </div>
               </div>
@@ -312,20 +324,33 @@ function Dashboard() {
                   <p className="mt-1 text-lg font-semibold text-green-700">{data ? money(data.monthlyRevenue) : "—"}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Expenses</p>
+                  <p className="text-xs text-muted-foreground">Approved Operating Expenses</p>
                   <p className="mt-1 text-lg font-semibold text-red-600">{data ? money(data.monthlyExpenses) : "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Livestock Purchases</p>
+                  <p className="mt-1 text-lg font-semibold text-amber-700">{data ? money(data.monthlyLivestockPurchases) : "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Cost of Livestock Sold</p>
+                  <p className="mt-1 text-lg font-semibold text-amber-700">{data ? money(data.monthlyCostOfGoodsSold) : "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Estimated Profit / Loss</p>
+                  <p className={`mt-1 text-lg font-semibold ${data && data.estimatedProfit < 0 ? "text-red-600" : "text-green-700"}`}>{data ? money(data.estimatedProfit) : "—"}</p>
                 </div>
               </div>
               <div className="mt-4 h-52 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[{ period: "Current month", revenue: data?.monthlyRevenue ?? 0, expenses: data?.monthlyExpenses ?? 0 }]} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                  <BarChart data={[{ period: "Current month", revenue: data?.monthlyRevenue ?? 0, expenses: data?.monthlyExpenses ?? 0, costOfGoodsSold: data?.monthlyCostOfGoodsSold ?? 0 }]} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis tickFormatter={(value) => `₦${Number(value).toLocaleString("en-NG")}`} />
                     <Tooltip formatter={(value) => money(Number(value ?? 0))} />
                     <Legend />
                     <Bar dataKey="revenue" name="Revenue" fill="#16a34a" />
-                    <Bar dataKey="expenses" name="Expenses" fill="#dc2626" />
+                    <Bar dataKey="expenses" name="Approved operating expenses" fill="#dc2626" />
+                    <Bar dataKey="costOfGoodsSold" name="Cost of livestock sold" fill="#d97706" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -413,7 +438,7 @@ function Dashboard() {
                       key={expense.id}
                       className="flex justify-between gap-3"
                     >
-                      <span>{expense.spent_on}</span>
+                      <span>{expense.category} · {expense.spent_on}</span>
                       <span className="font-medium">
                         {money(number(expense.amount))}
                       </span>
@@ -433,7 +458,7 @@ function Dashboard() {
                 Dashboard data loaded from Supabase.
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Revenue includes recognised sales and received income. Estimated profit subtracts approved expenses and the recorded cost of livestock sold.
+                Sales revenue is the full value of completed invoices; cash received is tracked separately. Estimated profit/loss = sales revenue + other recognised income − approved operating expenses − cost of livestock sold. Livestock purchases are shown separately and their cost is recognised when those animals are sold.
               </p>
             </Panel>
           </div>
