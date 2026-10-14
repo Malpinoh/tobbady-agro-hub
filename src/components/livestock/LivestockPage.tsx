@@ -567,7 +567,7 @@ export default function LivestockPage() {
           />
 
           <StatCard
-            label="Mortality"
+            label="Deaths"
             value={stats.dead.toLocaleString()}
             icon={Skull}
           />
