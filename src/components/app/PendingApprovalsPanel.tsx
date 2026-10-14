@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/app/PageKit";
+import { ChangeComparison, RecordFields, useApprovalLookups } from "@/components/app/ApprovalDetails";
 
 type RecordTable = "animals" | "animal_batches" | "inventory_items";
 type RecordValues = Record<string, unknown>;
@@ -30,21 +31,12 @@ type PendingRow =
       original: unknown;
     };
 
-function DetailBlock({ title, value }: { title: string; value: unknown }) {
-  return (
-    <div className="min-w-0 rounded-md border bg-muted/30 p-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-relaxed">
-        {JSON.stringify(value ?? {}, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
 export function PendingApprovalsPanel() {
   const { user, hasRole } = useAuth();
   const qc = useQueryClient();
   const canApprove = hasRole("ceo") || hasRole("administrator");
+
+  const lookups = useApprovalLookups(canApprove).data;
 
   const query = useQuery({
     queryKey: ["record-approvals-pending"],
@@ -183,7 +175,7 @@ export function PendingApprovalsPanel() {
                         <strong>Secretary's reason:</strong> {row.reason}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        <strong>Requested by:</strong> {row.requestedBy}
+                        <strong>Requested by:</strong> {lookups?.user.get(row.requestedBy) ?? "Staff member"}
                       </p>
                     </>
                   )}
@@ -200,9 +192,9 @@ export function PendingApprovalsPanel() {
 
               {row.kind === "new-record" ? (
                 <details>
-                  <summary className="cursor-pointer text-sm font-medium">Inspect complete submitted record before decision</summary>
+                  <summary className="cursor-pointer text-sm font-medium">View full details before deciding</summary>
                   <div className="mt-3">
-                    <DetailBlock title="Submitted record details" value={row.values} />
+                    <RecordFields values={row.values} lookups={lookups} />
                   </div>
                 </details>
               ) : (
@@ -210,9 +202,15 @@ export function PendingApprovalsPanel() {
                   <summary className="cursor-pointer text-sm font-medium">
                     Inspect {row.requestType === "delete" ? "record to be deleted" : "current and proposed changes"} before decision
                   </summary>
-                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                    <DetailBlock title="Current/original record" value={row.original} />
-                    <DetailBlock title={row.requestType === "delete" ? "Requested deletion details" : "Proposed record changes"} value={row.proposed ?? row.original} />
+                  <div className="mt-3">
+                    {row.requestType === "delete" ? (
+                      <>
+                        <p className="mb-2 text-sm font-medium text-destructive">This record will be deleted if approved:</p>
+                        <RecordFields values={row.original} lookups={lookups} />
+                      </>
+                    ) : (
+                      <ChangeComparison original={row.original} proposed={row.proposed} lookups={lookups} />
+                    )}
                   </div>
                 </details>
               )}
