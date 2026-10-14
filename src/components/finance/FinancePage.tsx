@@ -554,12 +554,12 @@ const paidExpenses = expenses
               <tr>
                 <th className="p-3 font-medium">Date</th>
                 <th className="p-3 font-medium">Type</th>
-                <th className="p-3 font-medium">Category / description</th>
-                <th className="p-3 font-medium">Livestock / batch</th>
-                <th className="p-3 font-medium">Reference</th>
+                <th className="p-3 font-medium">Category / details</th>
+                <th className="p-3 font-medium">Animal or group</th>
+                <th className="p-3 font-medium">Receipt or record number</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Status</th>
-                {(canApprove || canManage) && <th className="p-3 font-medium">Approval / payment</th>}
+                {(canApprove || canManage) && <th className="p-3 font-medium">Approval / payment status</th>}
               </tr>
             </thead>
             <tbody>
@@ -706,7 +706,7 @@ const paidExpenses = expenses
             </div>
 
             <div className="space-y-2">
-              <Label>Link to livestock (optional)</Label>
+              <Label>Link to an animal or group (optional)</Label>
               <Select value={form.livestockLink} onValueChange={(value) => setForm({ ...form, livestockLink: value })}>
                 <SelectTrigger><SelectValue placeholder="e.g. Feed, transport or farm repairs" /></SelectTrigger>
                 <SelectContent>
@@ -715,7 +715,7 @@ const paidExpenses = expenses
                   {linkBatches.map((batch) => <SelectItem key={batch.id} value={`batch:${batch.id}`}>Batch · {batch.batch_code}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Attach this income or expense to a specific approved animal or batch for cost and profitability tracking.</p>
+              <p className="text-xs text-muted-foreground">Link this money received or expense to a specific approved animal or group to track its costs and profit.</p>
             </div>
 
             <div className="space-y-2">
