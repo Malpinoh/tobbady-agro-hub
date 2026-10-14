@@ -770,13 +770,14 @@ function InventoryContent() {
                 <th className="p-3 font-medium">Item</th>
                 <th className="p-3 font-medium">What changed</th>
                 <th className="p-3 font-medium">Quantity</th>
+                <th className="p-3 font-medium">Feed used for</th>
                 <th className="p-3 font-medium">Reference / notes</th>
               </tr>
             </thead>
             <tbody>
               {transactionsQuery.isLoading ? (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
                     Loading movement history...
                   </td>
                 </tr>
@@ -810,6 +811,13 @@ function InventoryContent() {
                       </td>
                       <td className="p-3">
                         {transaction.quantity} {item?.unit ?? ""}
+                      </td>
+                      <td className="p-3">
+                        {transaction.animal_id
+                          ? activeAnimals.find((animal) => animal.id === transaction.animal_id)?.tag_number ?? "Individual animal"
+                          : transaction.batch_id
+                            ? activeBatches.find((batch) => batch.id === transaction.batch_id)?.batch_code ?? "Livestock batch"
+                            : "General / not assigned"}
                       </td>
                       <td className="max-w-xs p-3">
                         <div>{transaction.reference || "—"}</div>
