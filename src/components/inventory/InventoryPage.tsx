@@ -500,9 +500,9 @@ function InventoryContent() {
                 <th className="p-3 font-medium">Item</th>
                 <th className="p-3 font-medium">Category</th>
                 <th className="p-3 font-medium">Quantity</th>
-                <th className="p-3 font-medium">Reorder level</th>
+                <th className="p-3 font-medium">When to buy more</th>
                 <th className="p-3 font-medium">Unit cost</th>
-                <th className="p-3 font-medium">Stock value</th>
+                <th className="p-3 font-medium">Value of items in stock</th>
                 {canManage && <th className="p-3 font-medium">Actions</th>}
               </tr>
             </thead>
@@ -594,7 +594,7 @@ function InventoryContent() {
               <tr>
                 <th className="p-3 font-medium">Date</th>
                 <th className="p-3 font-medium">Item</th>
-                <th className="p-3 font-medium">Movement</th>
+                <th className="p-3 font-medium">What changed</th>
                 <th className="p-3 font-medium">Quantity</th>
                 <th className="p-3 font-medium">Reference / notes</th>
               </tr>
@@ -674,7 +674,7 @@ function InventoryContent() {
             </div>
 
             <div className="space-y-2">
-              <Label>SKU / item code</Label>
+              <Label>Item code (optional)</Label>
               <Input
                 value={itemForm.sku}
                 onChange={(e) => setItemForm({ ...itemForm, sku: e.target.value })}
@@ -709,7 +709,7 @@ function InventoryContent() {
 
             {!editingItem && (
               <div className="space-y-2">
-                <Label>Opening quantity</Label>
+                <Label>Starting quantity</Label>
                 <Input
                   type="number"
                   min="0"
@@ -791,7 +791,7 @@ function InventoryContent() {
               </div>
 
               <div className="space-y-2">
-                <Label>Movement type</Label>
+                <Label>What happened to the stock?</Label>
                 <Select value={movementType} onValueChange={setMovementType}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -804,7 +804,7 @@ function InventoryContent() {
 
               {movementType === "count" ? (
                 <div className="space-y-2">
-                  <Label>Actual quantity counted ({selectedItem?.unit ?? "units"})</Label>
+                  <Label>Quantity you counted ({selectedItem?.unit ?? "units"})</Label>
                   <Input
                     type="number"
                     min="0"
@@ -830,7 +830,7 @@ function InventoryContent() {
 
               {movementType === "received" && (
                 <div className="space-y-2">
-                  <Label>Unit cost for this receipt (₦, optional)</Label>
+                  <Label>Cost per item received (₦, optional)</Label>
                   <Input
                     type="number"
                     min="0"
