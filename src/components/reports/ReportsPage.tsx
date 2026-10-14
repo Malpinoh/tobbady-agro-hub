@@ -22,9 +22,9 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 type ReportTab = "profit" | "livestock" | "sales" | "activity";
 
 const tabs: { id: ReportTab; label: string }[] = [
-  { id: "profit", label: "Profit & Loss" },
+  { id: "profit", label: "Profit and Loss" },
   { id: "livestock", label: "Livestock" },
-  { id: "sales", label: "Sales Analytics" },
+  { id: "sales", label: "Sales Summary" },
   { id: "activity", label: "Activity Log" },
 ];
 
@@ -74,7 +74,7 @@ function formatActivityDescription(item: {
     ? tableLabels[item.table_name] ?? item.table_name.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
     : "record";
   const record = item.record_id ? ` (ID: ${item.record_id})` : "";
-  return `${verb} ${table}${record}. Detailed description was not saved by the audit logger.`;
+  return `${verb} ${table}${record}. Detailed The system did not save a description for this change.`;
 }
 
 export function ReportsPage() {
@@ -323,8 +323,8 @@ export function ReportsPage() {
     <RequirePermission perm="reports.view">
       <div className="space-y-6">
         <PageHeader
-          title="Reports & Analytics"
-          description="Business performance reports for TOBADDY AGRO LIVESTOCK."
+          title="Reports"
+          description="See how the farm is doing, including sales, expenses, livestock and daily activity."
           actions={
             <Button variant="outline" onClick={refresh}>
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -389,23 +389,23 @@ export function ReportsPage() {
               <div className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                   <StatCard
-                    title="Other Recognised Income"
+                    title="Other Money Received"
                     value={formatNaira(totalIncome)}
                   />
                   <StatCard
-                    title="Livestock Sales Revenue"
+                    title="Money from Livestock Sales"
                     value={formatNaira(totalSales)}
                   />
                   <StatCard
-                    title="Cost of Livestock Sold"
+                    title="Cost of Animals Sold"
                     value={formatNaira(costOfGoodsSold)}
                   />
                   <StatCard
-                    title="Approved Operating Expenses"
+                    title="Approved Farm Expenses"
                     value={formatNaira(totalExpenses)}
                   />
                   <StatCard
-                    title="Livestock Acquisitions (separate)"
+                    title="Livestock Purchases (shown separately)"
                     value={formatNaira(totalLivestockAcquisitions)}
                   />
                   <div className={`rounded-xl border bg-card p-5 ${netProfit < 0 ? "text-red-600" : "text-green-700"}`}>
@@ -557,7 +557,7 @@ export function ReportsPage() {
                     value={formatNaira(totalPaid)}
                   />
                   <StatCard
-                    title="Outstanding Balance"
+                    title="Money Still Owed"
                     value={formatNaira(
                       sales.reduce(
                         (sum, item) =>
