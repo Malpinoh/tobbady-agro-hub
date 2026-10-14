@@ -25,7 +25,7 @@ const tabs: { id: ReportTab; label: string }[] = [
   { id: "profit", label: "Profit and Loss" },
   { id: "livestock", label: "Livestock" },
   { id: "sales", label: "Sales Summary" },
-  { id: "activity", label: "Activity Log" },
+  { id: "activity", label: "Recent Activity" },
 ];
 
 function StatCard({
@@ -471,7 +471,7 @@ export function ReportsPage() {
                     <span className="text-right">{formatNaira(totalExpenses + costOfGoodsSold)}</span>
                   </div>
                   <p className="p-4 text-xs text-muted-foreground">
-                    Net profit / loss = completed livestock sales revenue + other recognised income − approved operating expenses − cost of livestock sold. Livestock purchase entries are shown separately and excluded from operating expenses to avoid counting the same acquisition cost twice; the animal/batch acquisition cost is recognised when livestock is sold. Sales revenue uses full invoice value, while cash received and outstanding balances are tracked separately. This is a management report, not a substitute for audited financial statements.
+                    Profit or loss = money from completed animal sales + other money received − approved farm expenses − the cost of animals sold. Livestock purchase entries are shown separately and excluded from operating expenses to avoid counting the same acquisition cost twice; the animal/batch acquisition cost is recognised when livestock is sold. Sales revenue uses full invoice value, while cash received and outstanding balances are tracked separately. This is a management report, not a substitute for audited financial statements.
                   </p>
                 </div>
               </div>
@@ -515,9 +515,9 @@ export function ReportsPage() {
                   <table className="w-full text-left text-sm">
                     <thead className="bg-muted/50">
                       <tr>
-                        <th className="p-4">Livestock type</th>
-                        <th className="p-4">Individual records</th>
-                        <th className="p-4">Active batch quantity</th>
+                        <th className="p-4">Animal type</th>
+                        <th className="p-4">Individual animals</th>
+                        <th className="p-4">Animals in groups</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -578,9 +578,9 @@ export function ReportsPage() {
                       <tr>
                         <th className="p-4">Invoice</th>
                         <th className="p-4">Date</th>
-                        <th className="p-4">Sale value</th>
+                        <th className="p-4">Sale total</th>
                         <th className="p-4">Paid</th>
-                        <th className="p-4">Payment status</th>
+                        <th className="p-4">Has it been paid?</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -617,11 +617,11 @@ export function ReportsPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="p-4">Date and time</th>
+                      <th className="p-4">When</th>
                       <th className="p-4">Action</th>
                       <th className="p-4">Description</th>
-                      <th className="p-4">Table</th>
-                      <th className="p-4">User ID</th>
+                      <th className="p-4">Record type</th>
+                      <th className="p-4">User</th>
                     </tr>
                   </thead>
                   <tbody>
