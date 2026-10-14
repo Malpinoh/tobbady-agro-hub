@@ -344,12 +344,12 @@ function InventoryContent() {
         p_item_id: item.id,
         p_transaction_type: transactionType,
         p_quantity: transactionQuantity,
-        p_unit_cost: enteredCost,
-        p_reference: movementReference.trim() || null,
+        ...(enteredCost != null ? { p_unit_cost: enteredCost } : {}),
+        ...(movementReference.trim() ? { p_reference: movementReference.trim() } : {}),
         p_notes:
           movementType === "count"
             ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()
-            : movementNotes.trim() || null,
+            : movementNotes.trim() || "",
       });
 
       if (error) throw error;

@@ -438,7 +438,7 @@ function CEOOffice() {
         {
           p_approval_id: id,
           p_spent_on: spentOn,
-          p_reference: reference.trim() || null,
+          ...(reference.trim() ? { p_reference: reference.trim() } : {}),
           p_category: category.trim(),
         }
       );
@@ -1028,13 +1028,13 @@ function CEOOffice() {
       <p className="mt-3 text-sm text-destructive">
         Could not load saved targets. Check your database permissions.
       </p>
-    ) : targetsQuery.data.length === 0 ? (
+    ) : (targetsQuery.data ?? []).length === 0 ? (
       <p className="mt-3 text-sm text-muted-foreground">
         No targets saved yet. Use the form above to add your first target.
       </p>
     ) : (
       <div className="mt-3 space-y-3">
-        {targetsQuery.data.map((target) => (
+        {(targetsQuery.data ?? []).map((target) => (
           <div key={target.id} className="rounded-lg border p-4">
             <div className="flex flex-wrap justify-between gap-2">
               <h5 className="font-medium">{target.title}</h5>

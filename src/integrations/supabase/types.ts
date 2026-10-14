@@ -551,9 +551,9 @@ export type Database = {
         Row: {
           amount: number
           animal_id: string | null
-          batch_id: string | null
           approval_id: string | null
           approved_by: string | null
+          batch_id: string | null
           category: string
           created_at: string
           description: string | null
@@ -569,9 +569,9 @@ export type Database = {
         Insert: {
           amount: number
           animal_id?: string | null
-          batch_id?: string | null
           approval_id?: string | null
           approved_by?: string | null
+          batch_id?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -587,9 +587,9 @@ export type Database = {
         Update: {
           amount?: number
           animal_id?: string | null
-          batch_id?: string | null
           approval_id?: string | null
           approved_by?: string | null
+          batch_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -611,17 +611,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "expenses_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "animal_batches"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "expenses_approval_id_fkey"
             columns: ["approval_id"]
             isOneToOne: false
             referencedRelation: "executive_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "animal_batches"
             referencedColumns: ["id"]
           },
           {
@@ -703,7 +703,6 @@ export type Database = {
           amount: number
           animal_id: string | null
           batch_id: string | null
-          sale_id: string | null
           category: string
           created_at: string
           description: string | null
@@ -711,6 +710,7 @@ export type Database = {
           received_on: string
           recorded_by: string | null
           reference: string | null
+          sale_id: string | null
           status: string
           updated_at: string
         }
@@ -718,7 +718,6 @@ export type Database = {
           amount: number
           animal_id?: string | null
           batch_id?: string | null
-          sale_id?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -726,6 +725,7 @@ export type Database = {
           received_on?: string
           recorded_by?: string | null
           reference?: string | null
+          sale_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -733,7 +733,6 @@ export type Database = {
           amount?: number
           animal_id?: string | null
           batch_id?: string | null
-          sale_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -741,6 +740,7 @@ export type Database = {
           received_on?: string
           recorded_by?: string | null
           reference?: string | null
+          sale_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -1171,6 +1171,7 @@ export type Database = {
         Insert: {
           animal_id?: string | null
           batch_id?: string | null
+          cost_total?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1184,6 +1185,7 @@ export type Database = {
         Update: {
           animal_id?: string | null
           batch_id?: string | null
+          cost_total?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1478,14 +1480,16 @@ export type Database = {
         Args: { p_rows: Json; p_skip_columns?: string[]; p_table: string }
         Returns: undefined
       }
-      checkout_secretary_visitor: { Args: { p_visitor_id: string }; Returns: undefined }
-      create_platform_backup: { Args: { p_reason?: string }; Returns: string }
+      checkout_secretary_visitor: {
+        Args: { p_visitor_id: string }
+        Returns: undefined
+      }
       create_livestock_sale: {
         Args: {
           p_amount_paid: number
-          p_customer_id: string | null
+          p_customer_id: string
           p_items: Json
-          p_notes: string | null
+          p_notes: string
           p_sale_date: string
         }
         Returns: {
@@ -1495,6 +1499,7 @@ export type Database = {
           total_amount: number
         }[]
       }
+      create_platform_backup: { Args: { p_reason?: string }; Returns: string }
       has_permission: {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
@@ -1541,8 +1546,8 @@ export type Database = {
           p_notes?: string
           p_quantity: number
           p_reference?: string
-          p_supplier_id?: string | null
-          p_unit_cost?: number | null
+          p_supplier_id?: string
+          p_unit_cost?: number
         }
         Returns: undefined
       }

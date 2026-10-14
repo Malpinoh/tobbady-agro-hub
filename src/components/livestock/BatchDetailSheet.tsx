@@ -395,7 +395,7 @@ function BatchActionDialog({
         }
 
         const { error } = await supabase.rpc("create_livestock_sale", {
-          p_customer_id: null,
+          p_customer_id: null as unknown as string,
           p_sale_date: date,
           p_amount_paid: paid,
           p_notes: note.trim() || `Batch sale: ${batch.batch_code}`,

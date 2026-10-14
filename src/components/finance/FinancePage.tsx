@@ -280,21 +280,7 @@ const paidExpenses = expenses
     setSaving(true);
 
     try {
-      if (recordType === "income") {
-        const { error } = await supabase.from("income").insert({
-          amount,
-          category: form.category,
-          description: form.description.trim() || null,
-          received_on: form.date,
-          reference: form.reference.trim() || null,
-          recorded_by: user?.id ?? null,
-          status: "received",
-          animal_id: form.livestockLink.startsWith("animal:") ? form.livestockLink.slice(7) : null,
-          batch_id: form.livestockLink.startsWith("batch:") ? form.livestockLink.slice(6) : null,
-        } as any);
-
-        if (error) throw error;
-      } else {
+      {
         const { error } = await supabase.from("expenses").insert({
           amount,
           category: form.category,

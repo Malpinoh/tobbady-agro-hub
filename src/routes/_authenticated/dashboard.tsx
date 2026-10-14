@@ -218,7 +218,7 @@ function Dashboard() {
         todayLivestockPurchases,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
-        monthlyLivestockPurchases,
+        monthlyLivestockPurchases: monthLivestockPurchases,
         monthlyCostOfGoodsSold: monthCostOfGoodsSold,
         estimatedProfit: monthIncome - monthExpenses - monthCostOfGoodsSold,
         livestockSummary,
@@ -241,7 +241,7 @@ function Dashboard() {
     quantity: item.quantity,
   }));
 
-  const stats = [
+  const stats: Array<[string, string]> = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
     ["Estimated Livestock Value", data ? money(data.livestockValue) : "—"],
     ["Today's Sales Revenue", data ? money(data.todaySales) : "—"],

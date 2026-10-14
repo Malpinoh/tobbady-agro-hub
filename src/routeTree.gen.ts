@@ -12,12 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedBoardDocumentsRouteImport } from './routes/_authenticated/board-documents'
 import { Route as AuthenticatedCeoOfficeRouteImport } from './routes/_authenticated/ceo-office'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFarmOperationsRouteImport } from './routes/_authenticated/farm-operations'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
+import { Route as AuthenticatedLivestockRouteImport } from './routes/_authenticated/livestock'
+import { Route as AuthenticatedLivestockConfigRouteImport } from './routes/_authenticated/livestock-config'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedOperationsGuideRouteImport } from './routes/_authenticated/operations-guide'
 import { Route as AuthenticatedProcurementRouteImport } from './routes/_authenticated/procurement'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
@@ -39,6 +43,12 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedBoardDocumentsRoute =
+  AuthenticatedBoardDocumentsRouteImport.update({
+    id: '/board-documents',
+    path: '/board-documents',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCeoOfficeRoute = AuthenticatedCeoOfficeRouteImport.update({
   id: '/ceo-office',
   path: '/ceo-office',
@@ -65,10 +75,27 @@ const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLivestockRoute = AuthenticatedLivestockRouteImport.update({
+  id: '/livestock',
+  path: '/livestock',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLivestockConfigRoute =
+  AuthenticatedLivestockConfigRouteImport.update({
+    id: '/livestock-config',
+    path: '/livestock-config',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
     path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperationsGuideRoute =
+  AuthenticatedOperationsGuideRouteImport.update({
+    id: '/operations-guide',
+    path: '/operations-guide',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedProcurementRoute =
@@ -107,12 +134,16 @@ const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/board-documents': typeof AuthenticatedBoardDocumentsRoute
   '/ceo-office': typeof AuthenticatedCeoOfficeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/farm-operations': typeof AuthenticatedFarmOperationsRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/livestock': typeof AuthenticatedLivestockRoute
+  '/livestock-config': typeof AuthenticatedLivestockConfigRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/operations-guide': typeof AuthenticatedOperationsGuideRoute
   '/procurement': typeof AuthenticatedProcurementRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/sales': typeof AuthenticatedSalesRoute
@@ -123,12 +154,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/board-documents': typeof AuthenticatedBoardDocumentsRoute
   '/ceo-office': typeof AuthenticatedCeoOfficeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/farm-operations': typeof AuthenticatedFarmOperationsRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/livestock': typeof AuthenticatedLivestockRoute
+  '/livestock-config': typeof AuthenticatedLivestockConfigRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/operations-guide': typeof AuthenticatedOperationsGuideRoute
   '/procurement': typeof AuthenticatedProcurementRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/sales': typeof AuthenticatedSalesRoute
@@ -141,12 +176,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/board-documents': typeof AuthenticatedBoardDocumentsRoute
   '/_authenticated/ceo-office': typeof AuthenticatedCeoOfficeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/farm-operations': typeof AuthenticatedFarmOperationsRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
+  '/_authenticated/livestock': typeof AuthenticatedLivestockRoute
+  '/_authenticated/livestock-config': typeof AuthenticatedLivestockConfigRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/operations-guide': typeof AuthenticatedOperationsGuideRoute
   '/_authenticated/procurement': typeof AuthenticatedProcurementRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
@@ -159,12 +198,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/board-documents'
     | '/ceo-office'
     | '/dashboard'
     | '/farm-operations'
     | '/finance'
     | '/inventory'
+    | '/livestock'
+    | '/livestock-config'
     | '/notifications'
+    | '/operations-guide'
     | '/procurement'
     | '/reports'
     | '/sales'
@@ -175,12 +218,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/board-documents'
     | '/ceo-office'
     | '/dashboard'
     | '/farm-operations'
     | '/finance'
     | '/inventory'
+    | '/livestock'
+    | '/livestock-config'
     | '/notifications'
+    | '/operations-guide'
     | '/procurement'
     | '/reports'
     | '/sales'
@@ -192,12 +239,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/board-documents'
     | '/_authenticated/ceo-office'
     | '/_authenticated/dashboard'
     | '/_authenticated/farm-operations'
     | '/_authenticated/finance'
     | '/_authenticated/inventory'
+    | '/_authenticated/livestock'
+    | '/_authenticated/livestock-config'
     | '/_authenticated/notifications'
+    | '/_authenticated/operations-guide'
     | '/_authenticated/procurement'
     | '/_authenticated/reports'
     | '/_authenticated/sales'
@@ -235,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/board-documents': {
+      id: '/_authenticated/board-documents'
+      path: '/board-documents'
+      fullPath: '/board-documents'
+      preLoaderRoute: typeof AuthenticatedBoardDocumentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ceo-office': {
       id: '/_authenticated/ceo-office'
       path: '/ceo-office'
@@ -270,11 +328,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInventoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/livestock': {
+      id: '/_authenticated/livestock'
+      path: '/livestock'
+      fullPath: '/livestock'
+      preLoaderRoute: typeof AuthenticatedLivestockRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/livestock-config': {
+      id: '/_authenticated/livestock-config'
+      path: '/livestock-config'
+      fullPath: '/livestock-config'
+      preLoaderRoute: typeof AuthenticatedLivestockConfigRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/notifications': {
       id: '/_authenticated/notifications'
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operations-guide': {
+      id: '/_authenticated/operations-guide'
+      path: '/operations-guide'
+      fullPath: '/operations-guide'
+      preLoaderRoute: typeof AuthenticatedOperationsGuideRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/procurement': {
@@ -323,12 +402,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBoardDocumentsRoute: typeof AuthenticatedBoardDocumentsRoute
   AuthenticatedCeoOfficeRoute: typeof AuthenticatedCeoOfficeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFarmOperationsRoute: typeof AuthenticatedFarmOperationsRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
+  AuthenticatedLivestockRoute: typeof AuthenticatedLivestockRoute
+  AuthenticatedLivestockConfigRoute: typeof AuthenticatedLivestockConfigRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedOperationsGuideRoute: typeof AuthenticatedOperationsGuideRoute
   AuthenticatedProcurementRoute: typeof AuthenticatedProcurementRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
@@ -338,12 +421,16 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBoardDocumentsRoute: AuthenticatedBoardDocumentsRoute,
   AuthenticatedCeoOfficeRoute: AuthenticatedCeoOfficeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFarmOperationsRoute: AuthenticatedFarmOperationsRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
+  AuthenticatedLivestockRoute: AuthenticatedLivestockRoute,
+  AuthenticatedLivestockConfigRoute: AuthenticatedLivestockConfigRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedOperationsGuideRoute: AuthenticatedOperationsGuideRoute,
   AuthenticatedProcurementRoute: AuthenticatedProcurementRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
