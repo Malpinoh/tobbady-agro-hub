@@ -212,7 +212,7 @@ function InventoryContent() {
       reorder < 0 ||
       cost < 0
     ) {
-      alert("Quantity, reorder level and cost must be valid non-negative numbers.");
+      alert("Enter a valid quantity, low-stock limit and cost. These values cannot be negative.");
       return;
     }
 
@@ -414,7 +414,7 @@ function InventoryContent() {
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{lowStockItems.length}</div>
-          <p className="mt-1 text-xs text-muted-foreground">At or below reorder level</p>
+          <p className="mt-1 text-xs text-muted-foreground">At or below the low-stock limit</p>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
@@ -440,7 +440,7 @@ function InventoryContent() {
         <section className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
           <h2 className="mb-3 flex items-center gap-2 font-semibold">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
-            Reorder alerts
+            Low-stock alerts
           </h2>
           <div className="space-y-2">
             {lowStockItems.map((item) => (
@@ -451,7 +451,7 @@ function InventoryContent() {
                 <div>
                   <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    Available: {item.quantity_on_hand} {item.unit} · Reorder at:{" "}
+                    Available: {item.quantity_on_hand} {item.unit} · Restock when at:{" "}
                     {item.reorder_level} {item.unit}
                   </p>
                 </div>
@@ -725,7 +725,7 @@ function InventoryContent() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Reorder level</Label>
+                <Label>Low-stock limit</Label>
                 <Input
                   type="number"
                   min="0"
