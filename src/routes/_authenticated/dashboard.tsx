@@ -218,7 +218,7 @@ function Dashboard() {
         todayLivestockPurchases,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
-        monthlyLivestockPurchases,
+        monthlyLivestockPurchases: monthLivestockPurchases,
         monthlyCostOfGoodsSold: monthCostOfGoodsSold,
         estimatedProfit: monthIncome - monthExpenses - monthCostOfGoodsSold,
         livestockSummary,
