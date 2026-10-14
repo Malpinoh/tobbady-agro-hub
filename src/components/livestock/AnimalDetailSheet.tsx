@@ -47,7 +47,7 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
                   <Button variant="outline" size="sm" onClick={() => onEdit(a)}><Pencil className="mr-1.5 h-3.5 w-3.5" />Request edit</Button>
                   <DeletionRequestButton recordType="animal" recordId={a.id} label={a.tag_number} original={a} />
                   <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("transfer")}><ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />Record transfer</Button>
-                  <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("mortality")}><Skull className="mr-1.5 h-3.5 w-3.5" />Record mortality</Button>
+                  <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("mortality")}><Skull className="mr-1.5 h-3.5 w-3.5" />Record death</Button>
                   <Button variant="outline" size="sm" disabled={closed} onClick={() => setAction("sold")}><BadgeDollarSign className="mr-1.5 h-3.5 w-3.5" />Mark as sold</Button>
                 </div>
               )}
@@ -84,14 +84,14 @@ export function AnimalDetailSheet({ animal, onClose, onEdit, canManage, refData,
 </Section>
 
                 <Section title="Financial">
-                  <InfoRow label="Acquisition cost">{a.acquisition_cost != null ? formatNaira(Number(a.acquisition_cost)) : "—"}</InfoRow>
+                  <InfoRow label="Purchase cost">{a.acquisition_cost != null ? formatNaira(Number(a.acquisition_cost)) : "—"}</InfoRow>
                   <InfoRow label="Estimated current value">{a.estimated_value != null ? formatNaira(Number(a.estimated_value)) : "—"}</InfoRow>
-                  <InfoRow label="Potential gain / loss">
+                  <InfoRow label="Estimated increase or decrease in value">
                     {gain == null ? "—" : <span className={gain >= 0 ? "text-success" : "text-destructive"}>{gain >= 0 ? "+" : "−"}{formatNaira(Math.abs(gain))}</span>}
                   </InfoRow>
                 </Section>
-                <Section title="Acquisition">
-                  <InfoRow label="Acquisition date">{fmt(a.acquired_on)}</InfoRow>
+                <Section title="Purchase details">
+                  <InfoRow label="Date obtained">{fmt(a.acquired_on)}</InfoRow>
                   <div className="pt-1 text-sm"><span className="text-muted-foreground">Notes</span><p className="mt-1 whitespace-pre-wrap">{a.notes || "—"}</p></div>
                 </Section>
                 <Section title="Activity"><ActivityList table="animals" id={a.id} /></Section>
@@ -146,7 +146,7 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
     mutationFn: async () => {
       if (action === "transfer" && mode === "internal" && !sectionId) throw new Error("Choose the destination section.");
       if (action === "sold" && price && (isNaN(Number(price)) || Number(price) < 0)) throw new Error("Enter a valid sale price.");
-      const label = action === "mortality" ? "Mortality recorded" : action === "sold" ? `Sold${price ? ` for ${formatNaira(Number(price))}` : ""}`
+      const label = action === "mortality" ? "Death recorded" : action === "sold" ? `Sold${price ? ` for ${formatNaira(Number(price))}` : ""}`
         : mode === "internal" ? `Moved to ${lk.farmName(sectionId)} / ${lk.sectionName(sectionId)}` : "Transferred out";
       const line = `[${date}] ${label}${note.trim() ? ` — ${note.trim()}` : ""}`;
       const patch: Partial<Animal> = { notes: animal.notes ? `${animal.notes}\n${line}` : line };
@@ -160,7 +160,7 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
     onError: (e) => toast.error(friendlyError(e)),
   });
 
-  const title = action === "transfer" ? "Record transfer" : action === "mortality" ? "Record mortality" : "Mark as sold";
+  const title = action === "transfer" ? "Record transfer" : action === "mortality" ? "Record death" : "Mark as sold";
   return (
     <Dialog open={!!action} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
