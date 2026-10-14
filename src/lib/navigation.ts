@@ -9,27 +9,27 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   permission: PermissionKey;
-  group: "Overview" | "Offices" | "Operations" | "Commerce" | "Administration";
+  group: "Main" | "Offices" | "Farm" | "Sales & Money" | "Management";
 };
 
 /** Single source of truth for sidebar + page access. */
 export const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard.view", group: "Overview" },
-  { to: "/operations-guide", label: "Operations Guide", icon: BookOpen, permission: "dashboard.view", group: "Overview" },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard.view", group: "Main" },
+  { to: "/operations-guide", label: "How to Use the System", icon: BookOpen, permission: "dashboard.view", group: "Main" },
   { to: "/ceo-office", label: "CEO Office", icon: Crown, permission: "ceo.view", group: "Offices" },
   { to: "/secretary-office", label: "Secretary Office", icon: ClipboardList, permission: "secretary.view", group: "Offices" },
-  { to: "/board-documents", label: "Board Documents", icon: FileUp, permission: "documents.manage", group: "Offices" },
-  { to: "/farm-operations", label: "Farm Operations", icon: Tractor, permission: "farm.view", group: "Operations" },
-  { to: "/livestock", label: "Livestock", icon: Beef, permission: "livestock.view", group: "Operations" },
-  { to: "/livestock-config", label: "Livestock Setup", icon: Tags, permission: "livestock.config.manage", group: "Operations" },
-  { to: "/inventory", label: "Inventory", icon: Package, permission: "inventory.view", group: "Operations" },
-  { to: "/finance", label: "Finance", icon: Wallet, permission: "finance.view", group: "Commerce" },
-  { to: "/sales", label: "Sales & Customers", icon: ShoppingCart, permission: "sales.view", group: "Commerce" },
-  { to: "/procurement", label: "Suppliers & Procurement", icon: Truck, permission: "procurement.view", group: "Commerce" },
-  { to: "/staff", label: "Staff & Users", icon: Users, permission: "staff.view", group: "Administration" },
-  { to: "/reports", label: "Reports & Analytics", icon: BarChart3, permission: "reports.view", group: "Administration" },
-  { to: "/notifications", label: "Notifications", icon: Bell, permission: "notifications.view", group: "Administration" },
-  { to: "/settings", label: "Settings", icon: Settings, permission: "settings.view", group: "Administration" },
+  { to: "/board-documents", label: "Management Documents", icon: FileUp, permission: "documents.manage", group: "Offices" },
+  { to: "/farm-operations", label: "Farm Setup", icon: Tractor, permission: "farm.view", group: "Farm" },
+  { to: "/livestock", label: "Livestock", icon: Beef, permission: "livestock.view", group: "Farm" },
+  { to: "/livestock-config", label: "Animal Types & Breeds", icon: Tags, permission: "livestock.config.manage", group: "Farm" },
+  { to: "/inventory", label: "Feed, Medicine & Supplies", icon: Package, permission: "inventory.view", group: "Farm" },
+  { to: "/finance", label: "Income & Expenses", icon: Wallet, permission: "finance.view", group: "Sales & Money" },
+  { to: "/sales", label: "Sales & Customers", icon: ShoppingCart, permission: "sales.view", group: "Sales & Money" },
+  { to: "/procurement", label: "Suppliers & Purchases", icon: Truck, permission: "procurement.view", group: "Sales & Money" },
+  { to: "/staff", label: "Staff Accounts", icon: Users, permission: "staff.view", group: "Management" },
+  { to: "/reports", label: "Reports", icon: BarChart3, permission: "reports.view", group: "Management" },
+  { to: "/notifications", label: "Notifications", icon: Bell, permission: "notifications.view", group: "Management" },
+  { to: "/settings", label: "Settings", icon: Settings, permission: "settings.view", group: "Management" },
 ];
 
-export const NAV_GROUPS = ["Overview", "Offices", "Operations", "Commerce", "Administration"] as const;
+export const NAV_GROUPS = ["Main", "Offices", "Farm", "Sales & Money", "Management"] as const;

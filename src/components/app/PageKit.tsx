@@ -56,9 +56,9 @@ export function RequirePermission({ perm, children }: { perm: string; children: 
     return (
       <div className="mx-auto mt-16 max-w-lg rounded-xl border bg-card p-8 text-center shadow-card">
         <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-        <h2 className="mt-4 text-lg font-semibold">Account pending approval</h2>
+        <h2 className="mt-4 text-lg font-semibold">Your account is waiting for approval</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your account has been created, but no farm role has been assigned yet. The CEO or Administrator must review your signup and assign your role before you can access farm operations.
+          Your account has been created, but you have not been given a farm role yet. The CEO or Administrator must approve your account and assign your role before you can use the farm system.
         </p>
       </div>
     );
@@ -67,9 +67,9 @@ export function RequirePermission({ perm, children }: { perm: string; children: 
     return (
       <div className="mx-auto mt-16 max-w-md rounded-xl border bg-card p-8 text-center shadow-card">
         <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-        <h2 className="mt-4 text-lg font-semibold">Access restricted</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Your role doesn't include access to this section. Contact an administrator if you need it.</p>
-        <Button asChild variant="outline" className="mt-6"><Link to="/settings">Go to settings</Link></Button>
+        <h2 className="mt-4 text-lg font-semibold">You cannot open this page yet</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Your account does not have access to this page. Ask the Administrator if you need access.</p>
+        <Button asChild variant="outline" className="mt-6"><Link to="/settings">Open Settings</Link></Button>
       </div>
     );
   }
@@ -86,9 +86,9 @@ export function ComingSoon({ icon: Icon = Hammer, title, items }: { icon?: Lucid
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold">{title}</h3>
-            <StatusBadge tone="warning">Coming in a later stage</StatusBadge>
+            <StatusBadge tone="warning">Coming soon</StatusBadge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">The data structure for this module is ready. Planned capabilities:</p>
+          <p className="mt-1 text-sm text-muted-foreground">This part of the system is not ready yet. Planned features:</p>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {items.map((i) => (
               <li key={i} className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm">

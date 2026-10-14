@@ -397,8 +397,8 @@ const paidExpenses = expenses
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Finance"
-        description="Track cash received, expenses and approvals. Net recorded cash movement is not a bank balance; use Reports for profit/loss."
+        title="Income and Expenses"
+        description="Track money received, farm expenses and approvals. For profit and loss, check Reports."
         actions={
           canManage ? (
             <div className="flex flex-wrap gap-2">
@@ -541,7 +541,7 @@ const paidExpenses = expenses
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search category, description, reference or status..."
+              placeholder="Search by category, details, reference or status..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -554,12 +554,12 @@ const paidExpenses = expenses
               <tr>
                 <th className="p-3 font-medium">Date</th>
                 <th className="p-3 font-medium">Type</th>
-                <th className="p-3 font-medium">Category / description</th>
-                <th className="p-3 font-medium">Livestock / batch</th>
-                <th className="p-3 font-medium">Reference</th>
+                <th className="p-3 font-medium">Category / details</th>
+                <th className="p-3 font-medium">Animal or group</th>
+                <th className="p-3 font-medium">Receipt or record number</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Status</th>
-                {(canApprove || canManage) && <th className="p-3 font-medium">Approval / payment</th>}
+                {(canApprove || canManage) && <th className="p-3 font-medium">Approval / payment status</th>}
               </tr>
             </thead>
             <tbody>
@@ -706,16 +706,16 @@ const paidExpenses = expenses
             </div>
 
             <div className="space-y-2">
-              <Label>Link to livestock (optional)</Label>
+              <Label>Link to an animal or group (optional)</Label>
               <Select value={form.livestockLink} onValueChange={(value) => setForm({ ...form, livestockLink: value })}>
-                <SelectTrigger><SelectValue placeholder="General farm operation" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="e.g. Feed, transport or farm repairs" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">General farm operation</SelectItem>
                   {linkAnimals.map((animal) => <SelectItem key={animal.id} value={`animal:${animal.id}`}>Animal · {animal.tag_number}</SelectItem>)}
                   {linkBatches.map((batch) => <SelectItem key={batch.id} value={`batch:${batch.id}`}>Batch · {batch.batch_code}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Attach this income or expense to a specific approved animal or batch for cost and profitability tracking.</p>
+              <p className="text-xs text-muted-foreground">Link this money received or expense to a specific approved animal or group to track its costs and profit.</p>
             </div>
 
             <div className="space-y-2">
@@ -747,7 +747,7 @@ const paidExpenses = expenses
                 onChange={(event) =>
                   setForm({ ...form, description: event.target.value })
                 }
-                placeholder="Add details about this transaction..."
+                placeholder="Explain what the money was for..."
               />
             </div>
 

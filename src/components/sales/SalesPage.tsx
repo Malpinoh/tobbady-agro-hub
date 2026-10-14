@@ -482,17 +482,17 @@ function SalesContent() {
     icon: typeof Users;
   }[] = [
     { id: "customers", label: "Customers", icon: Users },
-    { id: "invoices", label: "Sales Invoices", icon: FileText },
+    { id: "invoices", label: "Sales Bills", icon: FileText },
     { id: "payments", label: "Payments", icon: Wallet },
-    { id: "receipts", label: "Receipts", icon: Receipt },
+    { id: "receipts", label: "Payment Receipts", icon: Receipt },
   ];
 
   return (
     <RequirePermission perm="sales.view">
       <div className="space-y-6">
         <PageHeader
-          title="Sales & Customers"
-          description="Invoice totals show sales revenue; payments received show cash collected; outstanding balances are still owed by customers."
+          title="Sales and Customers"
+          description="See what you sold, how much customers have paid, and how much they still owe."
           actions={
             <Button
               variant="outline"
@@ -521,7 +521,7 @@ function SalesContent() {
             icon={Users}
           />
           <SummaryCard
-            title="Recognized Sales Revenue"
+            title="Total Sales"
             value={money(totalSales)}
             icon={FileText}
           />
@@ -531,7 +531,7 @@ function SalesContent() {
             icon={Wallet}
           />
           <SummaryCard
-            title="Outstanding Customer Balance"
+            title="Money Customers Still Owe"
             value={money(outstanding)}
             icon={Receipt}
           />
@@ -726,7 +726,7 @@ function SalesContent() {
         <Dialog open={saleDialog} onOpenChange={setSaleDialog}>
           <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create Sales Invoice</DialogTitle>
+              <DialogTitle>Create a Sales Bill</DialogTitle>
               <DialogDescription>
                 Select the actual animal or batch being sold. Saving the invoice records the sale and reduces available livestock stock automatically.
               </DialogDescription>
@@ -777,7 +777,7 @@ function SalesContent() {
                   const selectedAnimal = availableAnimals.find((animal) => animal.id === item.record_id);
                   return (
                     <div key={itemIndex} className="grid gap-3 rounded-md bg-muted/30 p-3 md:grid-cols-2">
-                      <FormField label="Livestock record type">
+                      <FormField label="What are you selling?">
                         <Select
                           value={item.kind}
                           onValueChange={(value) => {
@@ -795,7 +795,7 @@ function SalesContent() {
                         </Select>
                       </FormField>
 
-                      <FormField label={item.kind === "animal" ? "Select animal *" : "Select batch *"}>
+                      <FormField label={item.kind === "animal" ? "Choose animal *" : "Choose animal group *"}>
                         <Select
                           value={item.record_id || "none"}
                           onValueChange={(value) => setSaleItems((items) => items.map((current, index) => index === itemIndex ? { ...current, record_id: value === "none" ? "" : value } : current))}
@@ -816,7 +816,7 @@ function SalesContent() {
                         </Select>
                       </FormField>
 
-                      <FormField label={item.kind === "animal" ? "Quantity" : "Quantity to sell *"}>
+                      <FormField label={item.kind === "animal" ? "Number of animals" : "Number to sell *"}>
                         <Input
                           type="number"
                           min="1"
@@ -828,7 +828,7 @@ function SalesContent() {
                         />
                       </FormField>
 
-                      <FormField label="Unit sale price (₦) *">
+                      <FormField label="Price per animal or unit (₦) *">
                         <Input
                           type="number"
                           min="0"
@@ -862,7 +862,7 @@ function SalesContent() {
                 ) : null}
               </div>
 
-              <FormField label="Initial payment received (₦)">
+              <FormField label="Amount paid now (₦)">
                 <Input
                   type="number"
                   min="0"
@@ -872,7 +872,7 @@ function SalesContent() {
                   onChange={(e) => setSaleForm({ ...saleForm, amount_paid: e.target.value })}
                 />
               </FormField>
-              <FormField label="Sale date *">
+              <FormField label="Date sold *">
                 <Input
                   type="date"
                   value={saleForm.sale_date}
@@ -909,7 +909,7 @@ function SalesContent() {
                   : "Enter a payment amount."}
               </DialogDescription>
             </DialogHeader>
-            <FormField label="Payment amount (₦)">
+            <FormField label="Amount received (₦)">
               <Input
                 type="number"
                 min="1"
@@ -1111,12 +1111,12 @@ function SalesTable({
       <table className="w-full text-left text-sm">
         <thead className="bg-muted/50">
           <tr>
-            <th className="p-3 font-medium">Invoice</th>
+            <th className="p-3 font-medium">Bill number</th>
             <th className="p-3 font-medium">Customer</th>
             <th className="p-3 font-medium">Date</th>
             <th className="p-3 font-medium">Total</th>
             <th className="p-3 font-medium">Paid</th>
-            <th className="p-3 font-medium">Balance</th>
+            <th className="p-3 font-medium">Still owed</th>
             <th className="p-3 font-medium">Status</th>
             <th className="p-3 font-medium">Actions</th>
           </tr>
