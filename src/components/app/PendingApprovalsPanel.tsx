@@ -38,6 +38,7 @@ type PendingRow =
       requestedBy: string;
       proposed: unknown;
       original: unknown;
+      genericDelete?: boolean;
     };
 
 export function PendingApprovalsPanel() {
@@ -54,13 +55,14 @@ export function PendingApprovalsPanel() {
     enabled: canApprove,
     queryFn: async (): Promise<PendingRow[]> => {
       const db = supabase as any;
-      const [a, b, i, requests] = await Promise.all([
+      const [a, b, i, requests, deleteRequests] = await Promise.all([
         db.from("animals").select("*").eq("approval_status", "pending").order("created_at", { ascending: false }),
         db.from("animal_batches").select("*").eq("approval_status", "pending").order("created_at", { ascending: false }),
         db.from("inventory_items").select("*").eq("approval_status", "pending").order("created_at", { ascending: false }),
         db.from("record_change_requests").select("*").eq("status", "pending").order("requested_at", { ascending: false }),
+        db.from("secretary_delete_requests").select("*").eq("status", "pending").order("requested_at", { ascending: false }),
       ]);
-      for (const result of [a, b, i, requests]) {
+      for (const result of [a, b, i, requests, deleteRequests]) {
         if (result.error) throw result.error;
       }
 
@@ -101,6 +103,19 @@ export function PendingApprovalsPanel() {
           proposed: x["proposed_values"],
           original: x["original_values"],
         })),
+        ...(deleteRequests.data ?? []).map((x: RecordValues) => ({
+          kind: "change-request" as const,
+          id: String(x["id"]),
+          label: String(x["record_label"] ?? "Deletion request"),
+          detail: `Delete request · ${String(x["table_name"] ?? "business record").replaceAll("_", " ")}`,
+          recordType: "animal" as const,
+          requestType: "delete" as const,
+          reason: String(x["reason"] ?? "Deletion requested from the record page"),
+          requestedBy: String(x["requested_by"] ?? "Unknown user"),
+          proposed: null,
+          original: x["record_snapshot"],
+          genericDelete: true,
+        })),
       ];
     },
   });
@@ -133,11 +148,17 @@ export function PendingApprovalsPanel() {
 
     try {
       if (row.kind === "change-request") {
-        const result = await db.rpc("review_record_change_request", {
-          p_request_id: row.id,
-          p_decision: decision,
-          p_rejection_reason: rejectionReason,
-        });
+        const result = row.genericDelete
+          ? await db.rpc("review_secretary_delete_request", {
+              p_request_id: row.id,
+              p_decision: decision,
+              p_rejection_reason: rejectionReason,
+            })
+          : await db.rpc("review_record_change_request", {
+              p_request_id: row.id,
+              p_decision: decision,
+              p_rejection_reason: rejectionReason,
+            });
         error = result.error;
       } else {
         const result = await db
