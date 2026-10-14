@@ -397,8 +397,8 @@ const paidExpenses = expenses
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Finance"
-        description="Track cash received, expenses and approvals. Net recorded cash movement is not a bank balance; use Reports for profit/loss."
+        title="Income and Expenses"
+        description="Track money received, farm expenses and approvals. For profit and loss, check Reports."
         actions={
           canManage ? (
             <div className="flex flex-wrap gap-2">
@@ -541,7 +541,7 @@ const paidExpenses = expenses
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search category, description, reference or status..."
+              placeholder="Search by category, details, reference or status..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -708,7 +708,7 @@ const paidExpenses = expenses
             <div className="space-y-2">
               <Label>Link to livestock (optional)</Label>
               <Select value={form.livestockLink} onValueChange={(value) => setForm({ ...form, livestockLink: value })}>
-                <SelectTrigger><SelectValue placeholder="General farm operation" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="e.g. Feed, transport or farm repairs" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">General farm operation</SelectItem>
                   {linkAnimals.map((animal) => <SelectItem key={animal.id} value={`animal:${animal.id}`}>Animal · {animal.tag_number}</SelectItem>)}
@@ -747,7 +747,7 @@ const paidExpenses = expenses
                 onChange={(event) =>
                   setForm({ ...form, description: event.target.value })
                 }
-                placeholder="Add details about this transaction..."
+                placeholder="Explain what the money was for..."
               />
             </div>
 
