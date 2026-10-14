@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -109,15 +109,56 @@ function NotificationsPage() {
 
       if (error) throw error;
 
-      return (data ?? []).filter(
+      const visible = (data ?? []).filter(
         (item) =>
           item.user_id === user?.id ||
           (item.user_id === null &&
             (item.target_role === null ||
               roles.includes(item.target_role))),
       );
+
+      // Role-wide announcements are shared records, so each user's read
+      // status must be stored separately instead of changing the shared row.
+      const { data: receipts, error: receiptError } = await supabase
+        .from("notification_reads")
+        .select("notification_id, read_at")
+        .eq("user_id", user!.id)
+        .in("notification_id", visible.map((item) => item.id));
+
+      if (receiptError) throw receiptError;
+
+      const readById = new Map(
+        (receipts ?? []).map((receipt) => [receipt.notification_id, receipt.read_at]),
+      );
+
+      return visible.map((item) => ({
+        ...item,
+        read_at: item.user_id === user!.id
+          ? item.read_at
+          : readById.get(item.id) ?? null,
+      }));
     },
   });
+
+  useEffect(() => {
+    if (!user || demoMode) return;
+
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        () => { void queryClient.invalidateQueries({ queryKey: ["notifications"] }); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notification_reads", filter: `user_id=eq.${user.id}` },
+        () => { void queryClient.invalidateQueries({ queryKey: ["notifications"] }); },
+      )
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
+  }, [user?.id, demoMode, queryClient]);
 
   const liveNotifications = notificationsQuery.data ?? [];
 
@@ -150,22 +191,40 @@ function NotificationsPage() {
       (notification) => notification.id === id,
     );
 
-    if (!item || item.user_id !== user?.id || item.read_at) return;
+    if (!item || item.read_at || !user) return;
 
-    const { error } = await supabase
-      .from("notifications")
-      .update({ read_at: new Date().toISOString() })
-      .eq("id", id)
-      .eq("user_id", user.id);
+    const readAt = new Date().toISOString();
 
-    if (error) {
-      window.alert(`Could not mark notification as read: ${error.message}`);
+    // Personal notifications can safely update their own row. Role-wide and
+    // everyone notifications use a per-user receipt so colleagues keep their
+    // own unread state.
+    const result = item.user_id === user.id
+      ? await supabase
+          .from("notifications")
+          .update({ read_at: readAt })
+          .eq("id", id)
+          .eq("user_id", user.id)
+      : await supabase
+          .from("notification_reads")
+          .upsert(
+            { notification_id: id, user_id: user.id, read_at: readAt },
+            { onConflict: "notification_id,user_id" },
+          );
+
+    if (result.error) {
+      window.alert(`Could not mark notification as read: ${result.error.message}`);
       return;
     }
 
-    await queryClient.invalidateQueries({
-      queryKey: ["notifications"],
-    });
+    // Update the page immediately, then refresh server truth for every badge.
+    queryClient.setQueryData(
+      ["notifications", user.id, roles],
+      (current: typeof liveNotifications | undefined) =>
+        current?.map((notification) =>
+          notification.id === id ? { ...notification, read_at: readAt } : notification,
+        ),
+    );
+    await queryClient.invalidateQueries({ queryKey: ["notifications"] });
   }
 
   
