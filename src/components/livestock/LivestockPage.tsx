@@ -500,7 +500,7 @@ export default function LivestockPage() {
     <RequirePermission perm="livestock.view">
       <PageHeader
         title="Livestock"
-        description="Manage individual animals, poultry batches, values, movements and livestock records."
+        description="Add animals, manage groups of birds or fish, and track stock numbers, sales and animal movements."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button
@@ -531,10 +531,10 @@ export default function LivestockPage() {
       <div className="space-y-6">\n        <PendingApprovalsPanel />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Total livestock"
+            label="Total animals and birds"
             value={stats.total.toLocaleString()}
             icon={PawPrint}
-            description="Active animals and birds"
+            description="Animals and birds currently on the farm"
           />
 
           <StatCard
@@ -545,10 +545,10 @@ export default function LivestockPage() {
           />
 
           <StatCard
-            label="Batch livestock"
+            label="Animals in groups"
             value={stats.birds.toLocaleString()}
             icon={Bird}
-            description="Current birds in active batches"
+            description="Animals counted as groups or batches"
           />
 
           <StatCard
@@ -650,7 +650,7 @@ export default function LivestockPage() {
               )}
             </Panel>
 
-            <Panel title="Operational summary">
+            <Panel title="Farm Summary">
               <div className="space-y-3">
                 <div className="flex justify-between border-b pb-3">
                   <span className="text-muted-foreground">
@@ -722,7 +722,7 @@ export default function LivestockPage() {
 
         {tab === "animals" && (
           <Panel
-            title="Individual animal register"
+            title="List of Individual Animals"
             action={
               <RequirePermission perm="livestock.manage">
                 <Button
@@ -744,7 +744,7 @@ export default function LivestockPage() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search tag, type or breed..."
+                  placeholder="Search by tag number, animal type or breed..."
                   className="pl-9"
                 />
               </div>
@@ -864,7 +864,7 @@ export default function LivestockPage() {
 
         {tab === "batches" && (
   <Panel
-    title="Poultry & batch livestock"
+    title="Birds and Other Animal Groups"
     action={
       <div className="flex items-center gap-2">
         <StatusBadge tone="info">
