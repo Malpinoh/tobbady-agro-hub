@@ -482,7 +482,7 @@ function SalesContent() {
     icon: typeof Users;
   }[] = [
     { id: "customers", label: "Customers", icon: Users },
-    { id: "invoices", label: "Sales Invoices", icon: FileText },
+    { id: "invoices", label: "Sales Bills", icon: FileText },
     { id: "payments", label: "Payments", icon: Wallet },
     { id: "receipts", label: "Receipts", icon: Receipt },
   ];
@@ -491,8 +491,8 @@ function SalesContent() {
     <RequirePermission perm="sales.view">
       <div className="space-y-6">
         <PageHeader
-          title="Sales & Customers"
-          description="Invoice totals show sales revenue; payments received show cash collected; outstanding balances are still owed by customers."
+          title="Sales and Customers"
+          description="See what you sold, how much customers have paid, and how much they still owe."
           actions={
             <Button
               variant="outline"
@@ -521,7 +521,7 @@ function SalesContent() {
             icon={Users}
           />
           <SummaryCard
-            title="Recognized Sales Revenue"
+            title="Total Sales"
             value={money(totalSales)}
             icon={FileText}
           />
@@ -531,7 +531,7 @@ function SalesContent() {
             icon={Wallet}
           />
           <SummaryCard
-            title="Outstanding Customer Balance"
+            title="Money Customers Still Owe"
             value={money(outstanding)}
             icon={Receipt}
           />
@@ -726,7 +726,7 @@ function SalesContent() {
         <Dialog open={saleDialog} onOpenChange={setSaleDialog}>
           <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create Sales Invoice</DialogTitle>
+              <DialogTitle>Create a Sales Bill</DialogTitle>
               <DialogDescription>
                 Select the actual animal or batch being sold. Saving the invoice records the sale and reduces available livestock stock automatically.
               </DialogDescription>
@@ -862,7 +862,7 @@ function SalesContent() {
                 ) : null}
               </div>
 
-              <FormField label="Initial payment received (₦)">
+              <FormField label="Amount paid now (₦)">
                 <Input
                   type="number"
                   min="0"
@@ -909,7 +909,7 @@ function SalesContent() {
                   : "Enter a payment amount."}
               </DialogDescription>
             </DialogHeader>
-            <FormField label="Payment amount (₦)">
+            <FormField label="Amount received (₦)">
               <Input
                 type="number"
                 min="1"
