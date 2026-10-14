@@ -471,7 +471,7 @@ export function ReportsPage() {
                     <span className="text-right">{formatNaira(totalExpenses + costOfGoodsSold)}</span>
                   </div>
                   <p className="p-4 text-xs text-muted-foreground">
-                    Profit or loss = money from completed animal sales + other money received − approved farm expenses − the cost of animals sold. Livestock purchase entries are shown separately and excluded from operating expenses to avoid counting the same acquisition cost twice; the animal/batch acquisition cost is recognised when livestock is sold. Sales revenue uses full invoice value, while cash received and outstanding balances are tracked separately. This is a management report, not a substitute for audited financial statements.
+                    Profit or loss is worked out from completed animal sales and other money received, minus approved farm expenses and the cost of animals sold. Livestock purchases are shown separately so the same cost is not counted twice. The purchase cost of an animal or group is included when it is sold. Sales use the full invoice amount, while payments received and money still owed are shown separately. This report helps manage the farm; it is not an audited financial statement.
                   </p>
                 </div>
               </div>
