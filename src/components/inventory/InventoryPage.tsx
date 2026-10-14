@@ -372,8 +372,8 @@ function InventoryContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Inventory"
-        description="Manage animal feed, medicines, vaccines and farm supplies."
+        title="Feed, Medicine and Supplies"
+        description="Track feed, medicines, vaccines and other farm supplies, and keep the available quantities correct."
         actions={
           canManage ? (
             <div className="flex flex-wrap gap-2">
@@ -473,7 +473,7 @@ function InventoryContent() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search item name or SKU..."
+              placeholder="Search by item name or item code..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -759,7 +759,7 @@ function InventoryContent() {
       <Dialog open={movementDialog} onOpenChange={setMovementDialog}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Record stock movement</DialogTitle>
+            <DialogTitle>Update stock</DialogTitle>
             <DialogDescription>
               Record stock received, stock used or a physical stock count.
             </DialogDescription>
@@ -811,7 +811,7 @@ function InventoryContent() {
                     step="any"
                     value={actualCount}
                     onChange={(e) => setActualCount(e.target.value)}
-                    placeholder="Enter the quantity physically counted"
+                    placeholder="Enter the quantity you counted at the farm"
                   />
                 </div>
               ) : (
@@ -856,7 +856,7 @@ function InventoryContent() {
                 <Textarea
                   value={movementNotes}
                   onChange={(e) => setMovementNotes(e.target.value)}
-                  placeholder="Supplier, reason for use, stock discrepancy..."
+                  placeholder="Supplier, reason used, or reason for a stock difference..."
                 />
               </div>
             </div>
