@@ -229,6 +229,61 @@ function NotificationsPage() {
     await queryClient.invalidateQueries({ queryKey: ["notifications"] });
   }
 
+
+  async function markAllAsRead() {
+    if (demoMode) {
+      setDemoReadIds(demoNotifications.map((item) => item.id));
+      return;
+    }
+    if (!user || unreadCount === 0) return;
+
+    const unread = liveNotifications.filter((item) => !item.read_at);
+    const personalIds = unread
+      .filter((item) => item.user_id === user.id)
+      .map((item) => item.id);
+    const sharedIds = unread
+      .filter((item) => item.user_id !== user.id)
+      .map((item) => item.id);
+    const readAt = new Date().toISOString();
+
+    if (personalIds.length) {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read_at: readAt })
+        .eq("user_id", user.id)
+        .in("id", personalIds);
+      if (error) {
+        window.alert(`Could not mark notifications as read: ${error.message}`);
+        return;
+      }
+    }
+
+    if (sharedIds.length) {
+      const { error } = await supabase
+        .from("notification_reads")
+        .upsert(
+          sharedIds.map((notification_id) => ({
+            notification_id,
+            user_id: user.id,
+            read_at: readAt,
+          })),
+          { onConflict: "notification_id,user_id" },
+        );
+      if (error) {
+        window.alert(`Could not mark notifications as read: ${error.message}`);
+        return;
+      }
+    }
+
+    queryClient.setQueryData(
+      ["notifications", user.id, roles],
+      (current: typeof liveNotifications | undefined) =>
+        current?.map((item) => item.read_at ? item : { ...item, read_at: readAt }),
+    );
+    await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    await queryClient.invalidateQueries({ queryKey: ["notification-unread-count"] });
+  }
+
   
 async function publishNotification(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault();
@@ -315,6 +370,15 @@ async function publishNotification(event: React.FormEvent<HTMLFormElement>) {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 {demoMode ? "Reset Demo" : "Refresh"}
               </Button>
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => void markAllAsRead()}
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Mark all as read
+                </Button>
+              )}
               <Button
                 variant={demoMode ? "default" : "outline"}
                 onClick={() => setDemoMode((current) => !current)}
