@@ -60,6 +60,16 @@ type InventoryTransaction = {
   unit_cost: number | null;
 };
 
+type FeedingExpense = {
+  id: string;
+  amount: number;
+  category: string;
+  status: string;
+  payment_status: string;
+  animal_id: string | null;
+  batch_id: string | null;
+};
+
 const emptyItem = {
   name: "",
   sku: "",
@@ -120,16 +130,51 @@ function InventoryContent() {
       const { data, error } = await supabase
         .from("inventory_transactions")
         .select("*")
-        .order("occurred_at", { ascending: false })
-        .limit(100);
+        .order("occurred_at", { ascending: false });
 
       if (error) throw error;
       return (data ?? []) as InventoryTransaction[];
     },
   });
 
-   const items = itemsQuery.data ?? [];
+   const feedingExpensesQuery = useQuery({
+    queryKey: ["inventory-feeding-expenses"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("id, amount, category, status, payment_status, animal_id, batch_id")
+        .ilike("category", "Animal feed");
+      if (error) throw error;
+      return (data ?? []) as FeedingExpense[];
+    },
+    refetchInterval: 30_000,
+  });
+
+  const items = itemsQuery.data ?? [];
   const transactions = transactionsQuery.data ?? [];
+  const feedingExpenses = feedingExpensesQuery.data ?? [];
+  const activeFeedExpenses = feedingExpenses.filter(
+    (expense) => !["rejected", "cancelled", "canceled", "void"].includes((expense.status ?? "").toLowerCase())
+      && (expense.payment_status ?? "").toLowerCase() === "paid",
+  );
+  const individualAnimalFeedSpend = activeFeedExpenses
+    .filter((expense) => !!expense.animal_id)
+    .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const batchFeedSpend = activeFeedExpenses
+    .filter((expense) => !!expense.batch_id)
+    .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const totalPaidFeedSpend = activeFeedExpenses
+    .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const itemById = new Map(items.map((item) => [item.id, item]));
+  const estimatedFeedUsedValue = transactions.reduce((sum, transaction) => {
+    const item = itemById.get(transaction.item_id);
+    if (
+      transaction.transaction_type !== "used"
+      || (item?.category ?? "").trim().toLowerCase() !== "feed"
+    ) return sum;
+    const unitCost = transaction.unit_cost ?? item?.unit_cost ?? 0;
+    return sum + Number(transaction.quantity || 0) * Number(unitCost || 0);
+  }, 0);
   const selectedItem = items.find((item) => item.id === selectedItemId);
 
   const lowStockItems = items.filter(
@@ -432,9 +477,45 @@ function InventoryContent() {
             <History className="h-5 w-5" />
           </div>
           <div className="mt-3 text-2xl font-semibold">{transactions.length}</div>
-          <p className="mt-1 text-xs text-muted-foreground">Latest 100 recorded movements</p>
+          <p className="mt-1 text-xs text-muted-foreground">All recorded stock movements</p>
         </div>
       </div>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Feeding costs</h2>
+          <p className="text-sm text-muted-foreground">
+            Paid feeding expenses linked to individual animals or batches, plus an estimate of the feed already used.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Individual animal feeding</p>
+            <p className="mt-3 text-2xl font-semibold">{feedingExpensesQuery.isError ? "Unavailable" : formatNaira(individualAnimalFeedSpend)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Paid “Animal feed” expenses linked to one animal</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Batch livestock feeding</p>
+            <p className="mt-3 text-2xl font-semibold">{feedingExpensesQuery.isError ? "Unavailable" : formatNaira(batchFeedSpend)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Paid “Animal feed” expenses linked to a batch</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Total paid feeding expenses</p>
+            <p className="mt-3 text-2xl font-semibold">{feedingExpensesQuery.isError ? "Unavailable" : formatNaira(totalPaidFeedSpend)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">All paid feeding expenses, including general farm feeding</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Estimated value of feed used</p>
+            <p className="mt-3 text-2xl font-semibold">{formatNaira(estimatedFeedUsedValue)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Quantity recorded as used × saved unit cost (or current item cost if no cost was saved)</p>
+          </div>
+        </div>
+        {feedingExpensesQuery.isError && (
+          <p className="text-sm text-muted-foreground">
+            Paid feeding expense totals could not be loaded for this account. The feed-used estimate is calculated from inventory movements.
+          </p>
+        )}
+      </section>
 
       {lowStockItems.length > 0 && (
         <section className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
