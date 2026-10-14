@@ -119,11 +119,13 @@ function NotificationsPage() {
 
       // Role-wide announcements are shared records, so each user's read
       // status must be stored separately instead of changing the shared row.
-      const { data: receipts, error: receiptError } = await supabase
-        .from("notification_reads")
-        .select("notification_id, read_at")
-        .eq("user_id", user!.id)
-        .in("notification_id", visible.map((item) => item.id));
+      const { data: receipts, error: receiptError } = visible.length
+        ? await supabase
+            .from("notification_reads")
+            .select("notification_id, read_at")
+            .eq("user_id", user!.id)
+            .in("notification_id", visible.map((item) => item.id))
+        : { data: [], error: null };
 
       if (receiptError) throw receiptError;
 
