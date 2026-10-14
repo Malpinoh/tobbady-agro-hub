@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/livestock")({
       {
         name: "description",
         content:
-          "Manage individual animals, poultry batches, livestock values, mortality and movements.",
+          "Manage individual animals and groups of birds or fish, their value, deaths, sales and transfers.",
       },
       {
         property: "og:title",
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/livestock")({
       {
         property: "og:description",
         content:
-          "Manage individual animals, poultry batches, livestock values, mortality and movements.",
+          "Manage individual animals and groups of birds or fish, their value, deaths, sales and transfers.",
       },
     ],
   }),

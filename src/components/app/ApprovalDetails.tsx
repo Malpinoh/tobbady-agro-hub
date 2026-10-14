@@ -27,7 +27,7 @@ const FIELDS: Record<string, FieldDef> = {
   submitted_quantity: { label: "Submitted quantity", kind: "number" },
   quantity_on_hand: { label: "Quantity on hand", kind: "number" },
   unit: { label: "Unit", kind: "text" },
-  reorder_level: { label: "Reorder level", kind: "number" },
+  reorder_level: { label: "Low-stock limit", kind: "number" },
   acquisition_cost: { label: "Purchase cost", kind: "money" },
   estimated_value: { label: "Estimated value", kind: "money" },
   estimated_unit_value: { label: "Estimated unit value", kind: "money" },

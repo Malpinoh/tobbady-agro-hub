@@ -244,8 +244,8 @@ export function BatchFormDialog({
 
         {!types.length ? (
           <div className="rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-            No active batch-tracked livestock types exist.
-            Add a livestock type with tracking method set to Batch first.
+            No active livestock types that use group records were found.
+            Add an animal type that is recorded in groups first.
           </div>
         ) : (
           <form
@@ -332,7 +332,7 @@ export function BatchFormDialog({
               />
             </Field>
 
-            <Field label="Start / acquisition date">
+            <Field label="Start date">
               <Input
                 type="date"
                 value={f.started_on}

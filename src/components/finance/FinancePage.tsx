@@ -575,7 +575,7 @@ const paidExpenses = expenses
                     <DollarSign className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                     <p className="font-medium">No finance records found</p>
                     <p className="mt-1 text-muted-foreground">
-                      Record sales in Sales and expenses here. Sale payments appear automatically in this ledger; approve expenses, then mark them paid when money leaves the farm.
+                      Record sales in Sales and expenses here. Sale payments appear here automatically. Approve expenses, then mark them paid when the farm pays them.
                     </p>
                   </td>
                 </tr>

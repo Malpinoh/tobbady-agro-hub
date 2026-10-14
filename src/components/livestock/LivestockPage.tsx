@@ -541,7 +541,7 @@ export default function LivestockPage() {
             label="Individual animals"
             value={stats.individuals.toLocaleString()}
             icon={Tag}
-            description="Individually tracked"
+            description="Each animal is recorded separately"
           />
 
           <StatCard
@@ -567,7 +567,7 @@ export default function LivestockPage() {
           />
 
           <StatCard
-            label="Mortality"
+            label="Deaths"
             value={stats.dead.toLocaleString()}
             icon={Skull}
           />
@@ -654,7 +654,7 @@ export default function LivestockPage() {
               <div className="space-y-3">
                 <div className="flex justify-between border-b pb-3">
                   <span className="text-muted-foreground">
-                    Individual tracking types
+                    Types recorded one animal at a time
                   </span>
                   <span className="font-semibold">
                     {individualTypes.length}
@@ -663,7 +663,7 @@ export default function LivestockPage() {
 
                 <div className="flex justify-between border-b pb-3">
                   <span className="text-muted-foreground">
-                    Batch tracking types
+                    Types recorded in groups
                   </span>
                   <span className="font-semibold">
                     {batchTypes.length}
@@ -917,7 +917,7 @@ export default function LivestockPage() {
             {[
               ["Animals", "Individual animal register"],
               ["Batches", "Poultry and batch tracking"],
-              ["Movements", "Mortality, sales and transfers"],
+              ["Movements", "Deaths, sales and transfers"],
               ["Audit", "Activity history"],
             ].map(([title, description]) => (
               <div
