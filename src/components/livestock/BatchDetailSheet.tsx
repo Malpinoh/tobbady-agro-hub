@@ -466,7 +466,7 @@ function BatchActionDialog({
 
   const title =
     action === "mortality"
-      ? "Record batch mortality"
+      ? "Record deaths in this group"
       : action === "sale"
         ? "Record batch sale"
         : "Record batch transfer";
