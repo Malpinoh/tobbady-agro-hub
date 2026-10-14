@@ -156,7 +156,7 @@ function AnimalTable({
             <th className="px-3 py-3 font-medium">Breed</th>
             <th className="px-3 py-3 font-medium">Sex</th>
             <th className="px-3 py-3 font-medium">Location</th>
-            <th className="px-3 py-3 font-medium">Value</th>
+            <th className="px-3 py-3 font-medium">Estimated value</th>
             <th className="px-3 py-3 font-medium">Status</th>
             <th className="px-3 py-3 text-right font-medium">Actions</th>
           </tr>
@@ -270,10 +270,10 @@ function BatchTable({
           <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
             <th className="px-3 py-3 font-medium">Batch</th>
             <th className="px-3 py-3 font-medium">Type</th>
-            <th className="px-3 py-3 font-medium">Initial</th>
-            <th className="px-3 py-3 font-medium">Current</th>
-            <th className="px-3 py-3 font-medium">Mortality</th>
-            <th className="px-3 py-3 font-medium">Sold</th>
+            <th className="px-3 py-3 font-medium">Starting number</th>
+            <th className="px-3 py-3 font-medium">Number left</th>
+            <th className="px-3 py-3 font-medium">Animals that died</th>
+            <th className="px-3 py-3 font-medium">Animals sold</th>
             <th className="px-3 py-3 font-medium">Location</th>
             <th className="px-3 py-3 font-medium">Status</th>
             <th className="px-3 py-3 font-medium">Actions</th>
@@ -912,7 +912,7 @@ export default function LivestockPage() {
   </Panel>
 )}
 
-        <Panel title="Livestock data model">
+        <Panel title="How animal records are tracked">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ["Animals", "Individual animal register"],
