@@ -959,6 +959,32 @@ export type Database = {
           },
         ]
       }
+      notification_reads: {
+        Row: {
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1325,6 +1351,51 @@ export type Database = {
         }
         Relationships: []
       }
+      secretary_delete_requests: {
+        Row: {
+          id: string
+          reason: string
+          record_id: string
+          record_label: string
+          record_snapshot: Json
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          table_name: string
+        }
+        Insert: {
+          id?: string
+          reason?: string
+          record_id: string
+          record_label: string
+          record_snapshot: Json
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          table_name: string
+        }
+        Update: {
+          id?: string
+          reason?: string
+          record_id?: string
+          record_label?: string
+          record_snapshot?: Json
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       secretary_meetings: {
         Row: {
           agenda: string | null
@@ -1531,8 +1602,6 @@ export type Database = {
       }
       record_inventory_movement: {
         Args: {
-          p_animal_id?: string | null
-          p_batch_id?: string | null
           p_item_id: string
           p_notes?: string
           p_quantity: number
@@ -1559,6 +1628,14 @@ export type Database = {
         Returns: undefined
       }
       review_record_change_request: {
+        Args: {
+          p_decision: string
+          p_rejection_reason?: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
+      review_secretary_delete_request: {
         Args: {
           p_decision: string
           p_rejection_reason?: string
