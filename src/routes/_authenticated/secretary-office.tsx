@@ -153,6 +153,22 @@ function SecretaryOffice() {
     }, "Visitor entry saved.");
   }
 
+  const [resched, setResched] = useState<{ id: string; date: string; time: string } | null>(null);
+  async function saveReschedule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!resched) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(resched.date)) { setErrorMessage("Please choose a valid date."); return; }
+    await finishWrite(async () => {
+      const { data, error } = await supabase.from("secretary_meetings")
+        .update({ meeting_date: resched.date, meeting_time: resched.time || null })
+        .eq("id", resched.id).select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("You don't have permission to reschedule this meeting.");
+      setResched(null);
+      await queryClient.invalidateQueries({ queryKey: ["secretary-office", "meetings"] });
+    }, "Meeting rescheduled.");
+  }
+
   async function markMeeting(id: string, status: Meeting["status"]) {
     await finishWrite(async () => {
       const { error } = await supabase.from("secretary_meetings").update({ status }).eq("id", id);
@@ -236,7 +252,12 @@ function SecretaryOffice() {
                 <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{item.title}</h3><p className="mt-1 text-sm text-muted-foreground">{format(new Date(item.meeting_date + "T12:00:00"), "EEE, d MMM yyyy")}{item.meeting_time ? " · " + item.meeting_time.slice(0,5) : ""}{item.venue ? " · " + item.venue : ""}</p></div><StatusBadge tone={item.status === "completed" ? "success" : item.status === "cancelled" ? "danger" : "info"}>{item.status}</StatusBadge></div>
                 {item.participants && <p className="mt-2 text-sm"><strong>Participants:</strong> {item.participants}</p>}
                 {item.agenda && <p className="mt-1 text-sm"><strong>Agenda:</strong> {item.agenda}</p>}
-                {canManage && item.status === "scheduled" && <div className="mt-3 flex gap-2"><Button size="sm" variant="outline" disabled={saving} onClick={() => void markMeeting(item.id, "completed")}><CheckCircle2 className="mr-1 h-4 w-4" />Complete</Button><Button size="sm" variant="ghost" disabled={saving} onClick={() => void markMeeting(item.id, "cancelled")}>Cancel</Button></div>}
+                {canManage && item.status === "scheduled" && <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={saving} onClick={() => void markMeeting(item.id, "completed")}><CheckCircle2 className="mr-1 h-4 w-4" />Complete</Button><Button size="sm" variant="outline" disabled={saving} onClick={() => setResched({ id: item.id, date: item.meeting_date, time: item.meeting_time?.slice(0, 5) ?? "" })}><CalendarDays className="mr-1 h-4 w-4" />Reschedule</Button><Button size="sm" variant="ghost" disabled={saving} onClick={() => void markMeeting(item.id, "cancelled")}>Cancel</Button></div>}
+                {canManage && resched?.id === item.id && <form onSubmit={saveReschedule} className="mt-3 grid gap-3 rounded-md border bg-muted/40 p-3 sm:grid-cols-[1fr_1fr_auto]">
+                  <Field label="New date *"><Input required type="date" value={resched.date} onChange={(e) => setResched({ ...resched, date: e.target.value })} /></Field>
+                  <Field label="New time"><Input type="time" value={resched.time} onChange={(e) => setResched({ ...resched, time: e.target.value })} /></Field>
+                  <div className="flex items-end gap-2"><Button type="submit" size="sm" disabled={saving}>{saving ? "Saving..." : "Save"}</Button><Button type="button" size="sm" variant="ghost" onClick={() => setResched(null)}>Close</Button></div>
+                </form>}
               </article>)}</div>}
           </Panel>
         </div>}
