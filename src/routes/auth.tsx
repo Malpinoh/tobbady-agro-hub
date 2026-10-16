@@ -87,6 +87,15 @@ function AuthPage() {
                 <Field name="email" label="Email" type="email" />
                 <Field name="password" label="Password" type="password" />
                 <Button className="w-full" disabled={busy}>Sign in</Button>
+                <button type="button" className="w-full text-center text-sm text-primary hover:underline" disabled={busy} onClick={async (ev) => {
+                  const email = String(new FormData(ev.currentTarget.form!).get("email") ?? "").trim();
+                  if (!email) { toast.error("Enter your email above first, then click Forgot password."); return; }
+                  setBusy(true);
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+                  setBusy(false);
+                  if (error) toast.error(error.message);
+                  else toast.success("If an account exists for that email, a reset link has been sent.");
+                }}>Forgot password?</button>
               </form>
             </TabsContent>
             <TabsContent value="signup">
