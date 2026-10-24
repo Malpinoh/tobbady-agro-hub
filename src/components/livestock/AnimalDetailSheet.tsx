@@ -12,6 +12,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/app/PageKit";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { validateMortality } from "@/lib/business-corrections";
+import { getLocalDateInputValue } from "@/lib/date-time";
 import { formatNaira } from "@/lib/access";
 import { STATUS_TONE, ageLabel, friendlyError, livestockKeys, titleCase, type Animal } from "@/lib/livestock";
 import { ActivityList } from "./ActivityList";
@@ -134,6 +137,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal; action: Action; onClose: () => void; refData: RefData; lk: Lookups }) {
+  const { hasRole } = useAuth();
+  const requestMortality = action === "mortality" && hasRole("secretary");
   const qc = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
@@ -144,6 +149,13 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
 
   const m = useMutation({
     mutationFn: async () => {
+      if (requestMortality) {
+        const validation = validateMortality(1, 1, date, getLocalDateInputValue(), note);
+        if (validation) throw new Error(validation);
+        const { error } = await supabase.rpc("submit_mortality_request", { p_record_type: "animal", p_record_id: animal.id, p_quantity: 1, p_death_on: date, p_reason: note.trim() });
+        if (error) throw new Error(error.message);
+        return;
+      }
       if (action === "transfer" && mode === "internal" && !sectionId) throw new Error("Choose the destination section.");
       if (action === "sold" && price && (isNaN(Number(price)) || Number(price) < 0)) throw new Error("Enter a valid sale price.");
       const label = action === "mortality" ? "Death recorded" : action === "sold" ? `Sold${price ? ` for ${formatNaira(Number(price))}` : ""}`
@@ -156,7 +168,7 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
       const { error } = await supabase.from("animals").update(patch).eq("id", animal.id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success("Record updated"); void Promise.all([qc.invalidateQueries({ queryKey: livestockKeys.all }), qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }), qc.invalidateQueries({ queryKey: ["reports-animals"] }), qc.invalidateQueries({ queryKey: ["reports-sales"] })]); onClose(); setNote(""); setPrice(""); },
+    onSuccess: () => { toast.success(requestMortality ? "Mortality request sent to CEO. Official stock is unchanged." : "Record updated"); void Promise.all([qc.invalidateQueries({ queryKey: ["mortality-request-status"] }), qc.invalidateQueries({ queryKey: ["record-approvals-pending"] }), qc.invalidateQueries({ queryKey: livestockKeys.all }), qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }), qc.invalidateQueries({ queryKey: ["reports-animals"] }), qc.invalidateQueries({ queryKey: ["reports-sales"] })]); onClose(); setNote(""); setPrice(""); },
     onError: (e) => toast.error(friendlyError(e)),
   });
 
@@ -167,7 +179,7 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
         <DialogHeader>
           <DialogTitle>{title} — {animal.tag_number}</DialogTitle>
           <DialogDescription>
-            {action === "mortality" && "The animal will be marked as dead. The record is kept for history and reporting."}
+            {action === "mortality" && (requestMortality ? "Submit the death for CEO review. Official stock remains unchanged until approval." : "The animal will be marked as dead. The record is kept for history and reporting.")}
             {action === "sold" && "The animal will be marked as sold. Full invoicing will be handled in the Sales module."}
             {action === "transfer" && "Move the animal to another section, or record that it left the business."}
           </DialogDescription>

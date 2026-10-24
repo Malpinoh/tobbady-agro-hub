@@ -73,6 +73,7 @@ import {
 
 
 import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
+import { MortalityRequestStatus } from "./MortalityRequestStatus";
 
 type Tab = "overview" | "animals" | "batches";
 
@@ -528,7 +529,9 @@ export default function LivestockPage() {
         }
       />
 
-      <div className="space-y-6">\n        <PendingApprovalsPanel />
+      <div className="space-y-6">
+        <PendingApprovalsPanel />
+        <MortalityRequestStatus />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Total animals and birds"

@@ -1,0 +1,4 @@
+- [ ] Route Secretary mortality submissions through CEO approval with database enforcement and status tracking.
+- [ ] Repair and verify secure password recovery using existing authentication.
+- [ ] Add permission-controlled expense correction preserving approval/payment metadata.
+- [ ] Run non-destructive tests and preview checks; report configuration and verification limits.

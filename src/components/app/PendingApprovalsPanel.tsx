@@ -39,6 +39,7 @@ type PendingRow =
       proposed: unknown;
       original: unknown;
       genericDelete?: boolean;
+      mortality?: { mortality_quantity: number; death_on: string; requested_at: string };
     };
 
 export function PendingApprovalsPanel() {
@@ -51,8 +52,9 @@ export function PendingApprovalsPanel() {
   const lookups = useApprovalLookups(canApprove).data;
 
   const query = useQuery({
-    queryKey: ["record-approvals-pending"],
+    queryKey: ["record-approvals-pending", user?.id],
     enabled: canApprove,
+    refetchInterval: 30_000,
     queryFn: async (): Promise<PendingRow[]> => {
       const db = supabase as any;
       const [a, b, i, requests, deleteRequests] = await Promise.all([
@@ -91,17 +93,18 @@ export function PendingApprovalsPanel() {
           table: "inventory_items" as const,
           values: x,
         })),
-        ...(requests.data ?? []).map((x: RecordValues) => ({
+        ...(requests.data ?? []).filter((x: RecordValues) => x["mortality_quantity"] == null || hasRole("ceo")).map((x: RecordValues) => ({
           kind: "change-request" as const,
           id: String(x["id"]),
           label: String(x["record_label"] ?? "Livestock change request"),
-          detail: `${x["request_type"] === "delete" ? "Deletion" : "Edit"} request · ${x["record_type"] === "animal" ? "Individual livestock" : "Livestock batch"}`,
+          detail: `${x["mortality_quantity"] != null ? "Mortality" : x["request_type"] === "delete" ? "Deletion" : "Edit"} request · ${x["record_type"] === "animal" ? "Individual livestock" : "Livestock batch"}`,
           recordType: x["record_type"] as "animal" | "batch",
           requestType: x["request_type"] as "edit" | "delete",
           reason: String(x["reason"] ?? "No reason supplied"),
           requestedBy: String(x["requested_by"] ?? "Unknown user"),
           proposed: x["proposed_values"],
           original: x["original_values"],
+          mortality: x["mortality_quantity"] != null ? { mortality_quantity: Number(x["mortality_quantity"]), death_on: String(x["death_on"]), requested_at: String(x["requested_at"]) } : undefined,
         })),
         ...(deleteRequests.data ?? []).map((x: RecordValues) => ({
           kind: "change-request" as const,
@@ -122,6 +125,9 @@ export function PendingApprovalsPanel() {
 
   async function decide(row: PendingRow, decision: "approved" | "rejected") {
     if (!canApprove || !user || isDeciding) return;
+    if (row.kind === "change-request" && row.mortality && (!hasRole("ceo") || row.requestedBy === user.id)) {
+      toast.error("Only a different CEO can decide this mortality request."); return;
+    }
 
     if (row.kind === "change-request" && decision === "rejected") {
       const rejectionReason = window.prompt("Reason for rejecting this request?")?.trim() || "";
@@ -183,6 +189,8 @@ export function PendingApprovalsPanel() {
       setSelectedRow(null);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["record-approvals-pending"] }),
+        qc.invalidateQueries({ queryKey: ["mortality-request-status"] }),
+        qc.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
         qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
         qc.invalidateQueries({ queryKey: ["livestock"] }),
         qc.invalidateQueries({ queryKey: ["inventory-items"] }),
@@ -287,7 +295,14 @@ export function PendingApprovalsPanel() {
                         </div>
                       </div>
                     </section>
-                    {selectedRow.requestType === "delete" ? (
+                    {selectedRow.mortality ? (
+                      <section className="space-y-3">
+                        <h3 className="text-sm font-semibold">Submitted mortality report</h3>
+                        <RecordFields values={{ ...selectedRow.mortality, requested_by: selectedRow.requestedBy }} lookups={lookups} />
+                        <h3 className="text-sm font-semibold">Livestock record at submission</h3>
+                        <RecordFields values={selectedRow.original} lookups={lookups} />
+                      </section>
+                    ) : selectedRow.requestType === "delete" ? (
                       <section className="space-y-2">
                         <h3 className="text-sm font-semibold text-destructive">Complete record proposed for deletion</h3>
                         <RecordFields values={selectedRow.original} lookups={lookups} />
@@ -306,11 +321,11 @@ export function PendingApprovalsPanel() {
                 <Button variant="outline" onClick={() => setSelectedRow(null)} disabled={isDeciding}>
                   Close
                 </Button>
-                <Button variant="outline" onClick={() => void decide(selectedRow, "rejected")} disabled={isDeciding}>
+                <Button variant="outline" onClick={() => void decide(selectedRow, "rejected")} disabled={isDeciding || (selectedRow.kind === "change-request" && !!selectedRow.mortality && (!hasRole("ceo") || selectedRow.requestedBy === user?.id))}>
                   <XCircle className="mr-2 h-4 w-4" />
                   {isDeciding ? "Processing…" : "Reject"}
                 </Button>
-                <Button onClick={() => void decide(selectedRow, "approved")} disabled={isDeciding}>
+                <Button onClick={() => void decide(selectedRow, "approved")} disabled={isDeciding || (selectedRow.kind === "change-request" && !!selectedRow.mortality && (!hasRole("ceo") || selectedRow.requestedBy === user?.id))}>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   {isDeciding ? "Processing…" : "Approve"}
                 </Button>

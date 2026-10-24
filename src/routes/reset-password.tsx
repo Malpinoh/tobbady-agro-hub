@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,16 @@ function ResetPasswordPage() {
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const recoveryConfirmed = useRef(false);
 
   useEffect(() => {
-    const isRecovery = window.location.hash.includes("type=recovery");
+    const isRecovery = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") { setReady(true); setChecked(true); }
+      if (event === "PASSWORD_RECOVERY") { recoveryConfirmed.current = true; setReady(true); setChecked(true); }
     });
     const t = setTimeout(async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session && (isRecovery || ready)) setReady(true);
+      const { data, error: authError } = await supabase.auth.getUser();
+      if (!authError && data.user && (isRecovery || recoveryConfirmed.current)) setReady(true);
       setChecked(true);
     }, 600);
     return () => { clearTimeout(t); sub.subscription.unsubscribe(); };
@@ -45,6 +46,7 @@ function ResetPasswordPage() {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!ready || busy) return;
     const f = new FormData(e.currentTarget);
     const password = String(f.get("password"));
     const confirm = String(f.get("confirm"));
@@ -52,11 +54,13 @@ function ResetPasswordPage() {
     if (password.length < 8) return setError("Password must be at least 8 characters.");
     if (password !== confirm) return setError("Passwords do not match.");
     setBusy(true);
-    const { error: err } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (err) return setError(err.message);
-    toast.success("Password updated. You're now signed in.");
-    navigate({ to: "/dashboard", replace: true });
+    try {
+      const { error: err } = await supabase.auth.updateUser({ password });
+      if (err) { setError(err.message); return; }
+      toast.success("Password updated. You're now signed in.");
+      navigate({ to: "/dashboard", replace: true });
+    } catch { setError("Unable to update your password. Please try again."); }
+    finally { setBusy(false); }
   }
 
   return (

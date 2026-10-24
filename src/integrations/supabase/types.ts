@@ -1107,7 +1107,9 @@ export type Database = {
       }
       record_change_requests: {
         Row: {
+          death_on: string | null
           id: string
+          mortality_quantity: number | null
           original_values: Json
           proposed_values: Json | null
           reason: string
@@ -1123,7 +1125,9 @@ export type Database = {
           status: string
         }
         Insert: {
+          death_on?: string | null
           id?: string
+          mortality_quantity?: number | null
           original_values?: Json
           proposed_values?: Json | null
           reason: string
@@ -1139,7 +1143,9 @@ export type Database = {
           status?: string
         }
         Update: {
+          death_on?: string | null
           id?: string
+          mortality_quantity?: number | null
           original_values?: Json
           proposed_values?: Json | null
           reason?: string
@@ -1555,6 +1561,14 @@ export type Database = {
         Args: { p_visitor_id: string }
         Returns: undefined
       }
+      correct_expense: {
+        Args: {
+          p_expected_updated_at: string
+          p_expense_id: string
+          p_values: Json
+        }
+        Returns: undefined
+      }
       create_livestock_sale: {
         Args: {
           p_amount_paid: number
@@ -1642,6 +1656,16 @@ export type Database = {
           p_request_id: string
         }
         Returns: undefined
+      }
+      submit_mortality_request: {
+        Args: {
+          p_death_on: string
+          p_quantity: number
+          p_reason: string
+          p_record_id: string
+          p_record_type: string
+        }
+        Returns: string
       }
     }
     Enums: {

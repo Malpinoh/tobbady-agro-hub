@@ -7,6 +7,7 @@ import {
   Clock,
   DollarSign,
   Search,
+  Pencil,
   Wallet,
   XCircle,
 } from "lucide-react";
@@ -14,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNaira } from "@/lib/access";
 import { getLocalDateInputValue } from "@/lib/date-time";
+import { expenseCorrectionValues, isReviewedExpense } from "@/lib/business-corrections";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +54,7 @@ type IncomeRecord = {
 };
 
 type ExpenseRecord = {
+  updated_at: string;
   id: string;
   amount: number;
   category: string;
@@ -89,7 +93,7 @@ const expenseCategories = [
 ];
 
 function FinanceContent() {
-  const { user, can } = useAuth();
+  const { user, can, hasRole } = useAuth();
   const queryClient = useQueryClient();
 
   const canManage = can("finance.manage");
@@ -98,6 +102,9 @@ function FinanceContent() {
   const [search, setSearch] = useState("");
   const [recordType, setRecordType] = useState<"income" | "expense">("expense");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<ExpenseRecord | null>(null);
+  const restrictedCorrection = !!editingExpense && isReviewedExpense(editingExpense);
+  const canCorrect = (expense: ExpenseRecord) => canManage && (!isReviewedExpense(expense) || hasRole("ceo") || hasRole("administrator"));
   const [saving, setSaving] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewingStatus, setReviewingStatus] = useState<"approved" | "rejected" | null>(null);
@@ -242,6 +249,7 @@ const paidExpenses = expenses
   }, [incomes, expenses, search, linkAnimals, linkBatches]);
 
   function openRecord(type: "income" | "expense") {
+    setEditingExpense(null);
     setRecordType(type);
     setForm({
       amount: "",
@@ -281,6 +289,15 @@ const paidExpenses = expenses
 
     try {
       {
+        if (editingExpense) {
+          const { error } = await supabase.rpc("correct_expense", {
+            p_expense_id: editingExpense.id,
+            p_expected_updated_at: editingExpense.updated_at,
+            p_values: expenseCorrectionValues(editingExpense, form),
+          });
+          if (error) throw error;
+          toast.success("Expense corrected. Approval and payment status preserved.");
+        } else {
         const { error } = await supabase.from("expenses").insert({
           amount,
           category: form.category,
@@ -294,6 +311,7 @@ const paidExpenses = expenses
         } as any);
 
         if (error) throw error;
+        }
       }
 
       setDialogOpen(false);
@@ -620,6 +638,11 @@ const paidExpenses = expenses
                       </td>
                       {(canApprove || canManage) && (
                         <td className="p-3">
+                          {expense && canCorrect(expense) && <Button size="sm" variant="outline" className="mb-2" onClick={() => {
+                            setEditingExpense(expense); setRecordType("expense");
+                            setForm({ amount: String(expense.amount), category: expense.category, description: expense.description ?? "", date: expense.spent_on, reference: expense.reference ?? "", livestockLink: expense.animal_id ? `animal:${expense.animal_id}` : expense.batch_id ? `batch:${expense.batch_id}` : "none" });
+                            setDialogOpen(true);
+                          }}><Pencil className="mr-2 h-4 w-4" />Correct expense</Button>}
                           {canApprove && expense?.status.toLowerCase() === "pending" ? (
                             <div className="flex gap-1">
                               <Button
@@ -662,10 +685,10 @@ const paidExpenses = expenses
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {recordType === "income" ? "Record income" : "Record expense"}
+              {editingExpense ? "Correct expense" : recordType === "income" ? "Record income" : "Record expense"}
             </DialogTitle>
             <DialogDescription>
-              {recordType === "income"
+              {editingExpense ? "Correct this existing record without changing its approval or payment status." : recordType === "income"
                 ? "Record money received by the farm."
                 : "Submit a farm expense for approval."}
             </DialogDescription>
@@ -676,6 +699,7 @@ const paidExpenses = expenses
               <Label>Amount (₦) *</Label>
               <Input
                 type="number"
+                disabled={restrictedCorrection}
                 min="0.01"
                 step="0.01"
                 value={form.amount}
@@ -689,6 +713,7 @@ const paidExpenses = expenses
             <div className="space-y-2">
               <Label>Category *</Label>
               <Select
+                disabled={restrictedCorrection}
                 value={form.category}
                 onValueChange={(value) => setForm({ ...form, category: value })}
               >
@@ -707,7 +732,7 @@ const paidExpenses = expenses
 
             <div className="space-y-2">
               <Label>Link to an animal or group (optional)</Label>
-              <Select value={form.livestockLink} onValueChange={(value) => setForm({ ...form, livestockLink: value })}>
+              <Select disabled={restrictedCorrection} value={form.livestockLink} onValueChange={(value) => setForm({ ...form, livestockLink: value })}>
                 <SelectTrigger><SelectValue placeholder="e.g. Feed, transport or farm repairs" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">General farm operation</SelectItem>
@@ -753,7 +778,7 @@ const paidExpenses = expenses
 
             {recordType === "expense" && (
               <p className="text-sm text-muted-foreground">
-                New expenses will be marked as pending until an authorized user reviews them.
+                {editingExpense ? "Approval, payment and original recording details remain unchanged. Reviewed or paid records allow date, description and reference corrections only." : "New expenses will be marked as pending until an authorized user reviews them."}
               </p>
             )}
           </div>
