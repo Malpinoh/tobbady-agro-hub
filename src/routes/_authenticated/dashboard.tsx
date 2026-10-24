@@ -8,6 +8,7 @@ import {
   RequirePermission,
 } from "@/components/app/PageKit";
 import { formatNaira } from "@/lib/access";
+import { recognizedSalesForPeriod } from "@/lib/dashboard-metrics";
 import { supabase } from "@/integrations/supabase/client";
 import { PendingApprovalsPanel } from "@/components/app/PendingApprovalsPanel";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -57,7 +58,7 @@ function Dashboard() {
           .eq("approval_status", "approved"),
         supabase
           .from("sales")
-          .select("id, sale_date, total_amount, status"),
+          .select("id, sale_date, total_amount, amount_paid, status"),
         supabase
           .from("expenses")
           .select("id, spent_on, amount, category, status"),
@@ -157,9 +158,9 @@ function Dashboard() {
       });
 
       const recognisedSales = sales.filter((sale) => ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase()));
-      const todaySales = recognisedSales
-        .filter((sale) => sale.sale_date === today)
-        .reduce((sum, sale) => sum + number(sale.total_amount), 0);
+      // Revenue means money received, not the full invoice value when a customer has only paid a deposit.
+      const todaySales = recognizedSalesForPeriod(recognisedSales, today, today)
+        .reduce((sum, sale) => sum + number(sale.amount_paid), 0);
 
       // Match the Profit & Loss report: only approved expenses affect this KPI.
       const isLivestockPurchase = (expense: { category?: string | null }) =>
@@ -184,10 +185,10 @@ function Dashboard() {
             ["received", "approved"].includes(String(item.status ?? "").toLowerCase())
         )
         .reduce((sum, item) => sum + number(item.amount), 0);
-      const monthSales = recognisedSales
-        .filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today)
-        .reduce((sum, sale) => sum + number(sale.total_amount), 0);
-      const monthSaleIds = new Set(recognisedSales.filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today).map((sale) => sale.id));
+      const monthRecognisedSales = recognizedSalesForPeriod(recognisedSales, monthStart, today);
+      const monthSales = monthRecognisedSales
+        .reduce((sum, sale) => sum + number(sale.amount_paid), 0);
+      const monthSaleIds = new Set(monthRecognisedSales.map((sale) => sale.id));
       const monthCostOfGoodsSold = (saleItemsResult.data ?? [])
         .filter((item) => monthSaleIds.has(item.sale_id))
         .reduce((sum, item) => sum + number(item.cost_total), 0);
