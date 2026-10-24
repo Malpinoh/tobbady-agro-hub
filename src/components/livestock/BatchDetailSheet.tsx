@@ -350,7 +350,7 @@ function BatchActionDialog({
   const qc = useQueryClient();
 
   const [date, setDate] = useState(
-    () => new Date().toISOString().slice(0, 10),
+    () => getLocalDateInputValue(),
   );
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
