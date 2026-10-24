@@ -14,7 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNaira } from "@/lib/access";
-import { getLocalDateInputValue } from "@/lib/date-time";
+import { formatDateOnly, getLocalDateInputValue } from "@/lib/date-time";
 import { expenseCorrectionValues, isReviewedExpense } from "@/lib/business-corrections";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -513,7 +513,7 @@ const paidExpenses = expenses
                 <div>
                   <p className="font-medium">{expense.category}</p>
                   <p className="text-sm text-muted-foreground">
-                    {expense.description || "No description"} · {new Date(expense.spent_on).toLocaleDateString()}
+                    {expense.description || "No description"} · {formatDateOnly(expense.spent_on)}
                   </p>
                   <p className="mt-1 font-semibold">{formatNaira(Number(expense.amount))}</p>
                 </div>
@@ -606,7 +606,7 @@ const paidExpenses = expenses
                   return (
                     <tr key={`${record.type}-${record.id}`} className="border-t">
                       <td className="whitespace-nowrap p-3">
-                        {new Date(record.date).toLocaleDateString()}
+                        {formatDateOnly(record.date)}
                       </td>
                       <td className="p-3">
                         <span className="inline-flex items-center gap-1">
