@@ -33,6 +33,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/app/PageKit";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { validateMortality } from "@/lib/business-corrections";
+import { getLocalDateInputValue } from "@/lib/date-time";
 
 import {
   batchBreakdown,
@@ -343,7 +345,8 @@ function BatchActionDialog({
   refData: RefData;
   lk: Lookups;
 }) {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  const requestMortality = action === "mortality" && hasRole("secretary");
   const qc = useQueryClient();
 
   const [date, setDate] = useState(
@@ -411,6 +414,14 @@ function BatchActionDialog({
         return;
       }
 
+      if (requestMortality) {
+        const validation = validateMortality(qty, batch.current_quantity, date, getLocalDateInputValue(), note);
+        if (validation) throw new Error(validation);
+        const { error } = await supabase.rpc("submit_mortality_request", { p_record_type: "batch", p_record_id: batch.id, p_quantity: qty, p_death_on: date, p_reason: note.trim() });
+        if (error) throw new Error(error.message);
+        return;
+      }
+
       const { error } = await supabase
         .from("batch_movements")
         .insert({
@@ -434,13 +445,15 @@ function BatchActionDialog({
     onSuccess: () => {
       toast.success(
         action === "mortality"
-          ? "Deaths recorded"
+          ? requestMortality ? "Mortality request sent to CEO. Official stock is unchanged." : "Deaths recorded"
           : action === "sale"
             ? "Sales invoice created and batch stock updated"
             : "Batch transfer recorded",
       );
 
       void Promise.all([
+        qc.invalidateQueries({ queryKey: ["mortality-request-status"] }),
+        qc.invalidateQueries({ queryKey: ["record-approvals-pending"] }),
         qc.invalidateQueries({ queryKey: livestockKeys.all }),
         qc.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
         qc.invalidateQueries({ queryKey: ["ceo-office-live-data"] }),
@@ -489,7 +502,7 @@ function BatchActionDialog({
             <strong>
               {batch.current_quantity.toLocaleString()}
             </strong>
-            . The quantity will be reduced automatically.
+            {requestMortality ? ". Official stock remains unchanged until the CEO approves." : ". The quantity will be reduced automatically."}
           </DialogDescription>
         </DialogHeader>
 

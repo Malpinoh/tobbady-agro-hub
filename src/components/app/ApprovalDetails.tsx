@@ -40,6 +40,10 @@ const FIELDS: Record<string, FieldDef> = {
   submitted_by: { label: "Submitted by", kind: "user" },
   created_by: { label: "Created by", kind: "user" },
   created_at: { label: "Submitted on", kind: "datetime" },
+  death_on: { label: "Death date", kind: "date" },
+  mortality_quantity: { label: "Deaths reported", kind: "number" },
+  requested_at: { label: "Submitted on", kind: "datetime" },
+  requested_by: { label: "Submitted by", kind: "user" },
 };
 
 const HIDDEN = new Set(["id", "approval_status", "approved_by", "approved_at", "rejection_reason", "updated_at"]);
