@@ -140,7 +140,7 @@ function ActionDialog({ animal, action, onClose, refData, lk }: { animal: Animal
   const { hasRole } = useAuth();
   const requestMortality = action === "mortality" && hasRole("secretary");
   const qc = useQueryClient();
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => getLocalDateInputValue());
   const [note, setNote] = useState("");
   const [price, setPrice] = useState("");
   const [mode, setMode] = useState<"internal" | "external">("internal");
