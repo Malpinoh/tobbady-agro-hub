@@ -11,6 +11,7 @@ import {
 import { formatNaira } from "@/lib/access";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { formatFarmDateTime } from "@/lib/date-time";
 
 export const Route = createFileRoute("/_authenticated/ceo-office")({
   head: () => ({
@@ -38,6 +39,7 @@ function CEOOffice() {
   const documentFileInputRef = useRef<HTMLInputElement>(null);
   const query = useQuery({
     queryKey: ["ceo-office-live-data"],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const [
         batchesResult,
@@ -46,36 +48,48 @@ function CEOOffice() {
         expensesResult,
         incomeResult,
         inventoryResult,
+        saleItemsResult,
       ] = await Promise.all([
         supabase
           .from("animal_batches")
-          .select("id, current_quantity, estimated_unit_value, status"),
-        supabase.from("animals").select("id, estimated_value"),
+          .select("id, current_quantity, estimated_unit_value, status, approval_status")
+          .eq("approval_status", "approved"),
+        supabase
+          .from("animals")
+          .select("id, estimated_value, status, approval_status")
+          .eq("approval_status", "approved"),
         supabase.from("sales").select(
           "id, sale_date, total_amount, status"
         ),
         supabase.from("expenses").select(
-        "id, spent_on, amount, status, payment_status"
-      ),
+          "id, spent_on, amount, status, payment_status"
+        ),
         supabase.from("income").select(
-          "id, sale_id, received_on, amount, status"
+          "id, sale_id, category, received_on, amount, status"
         ),
-        supabase.from("inventory_items").select(
-          "id, name, quantity_on_hand, reorder_level"
-        ),
+        supabase
+          .from("inventory_items")
+          .select("id, name, quantity_on_hand, reorder_level")
+          .eq("approval_status", "approved"),
+        supabase.from("sale_items").select("sale_id, cost_total"),
       ]);
 
       const results = [
-        batchesResult,
-        animalsResult,
-        salesResult,
-        expensesResult,
-        incomeResult,
-        inventoryResult,
-      ];
+        ["livestock batches", batchesResult],
+        ["individual animals", animalsResult],
+        ["sales", salesResult],
+        ["expenses", expensesResult],
+        ["income ledger", incomeResult],
+        ["inventory", inventoryResult],
+        ["sale item costs", saleItemsResult],
+      ] as const;
 
-      for (const result of results) {
-        if (result.error) throw result.error;
+      for (const [source, result] of results) {
+        if (result.error) {
+          throw new Error(
+            `Executive Office could not load ${source}: ${result.error.message}${result.error.code ? ` (code ${result.error.code})` : ""}`,
+          );
+        }
       }
 
       const batches = batchesResult.data ?? [];
@@ -84,63 +98,88 @@ function CEOOffice() {
       const expenses = expensesResult.data ?? [];
       const income = incomeResult.data ?? [];
       const inventory = inventoryResult.data ?? [];
+      const saleItems = saleItemsResult.data ?? [];
 
-      const today = new Date().toLocaleDateString("en-CA");
+      const now = new Date();
+      const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+      ].join("-");
       const monthStart = `${today.slice(0, 7)}-01`;
 
-      const validSales = sales.filter(
-        (s) => s.status !== "cancelled" && s.status !== "void"
+      const validSales = sales.filter((sale) =>
+        ["completed", "approved"].includes(String(sale.status ?? "").toLowerCase())
       );
 
-      const validExpenses = expenses.filter((e) => e.status === "approved");
+      // Match Reports & Analytics: only approved expenses affect management P&L.
+      const validExpenses = expenses.filter(
+        (expense) => String(expense.status ?? "").toLowerCase() === "approved"
+      );
 
-      // Sale-linked income is already represented in sales revenue; count only other income here.
       const validIncome = income.filter(
-        (i) => !i.sale_id && ["received", "approved"].includes(i.status)
+        (item) =>
+          !item.sale_id &&
+          String(item.category ?? "").trim().toLowerCase() !== "livestock sales" &&
+          ["received", "approved"].includes(String(item.status ?? "").toLowerCase())
       );
 
       const activeBatches = batches.filter(
-        (b) => b.status !== "sold" && b.status !== "inactive"
+        (batch) =>
+          String(batch.status ?? "").toLowerCase() === "active" &&
+          amount(batch.current_quantity) > 0
+      );
+      const activeAnimals = animals.filter(
+        (animal) => String(animal.status ?? "").toLowerCase() === "active"
       );
 
       const livestockCount =
         activeBatches.reduce(
-          (sum, b) => sum + amount(b.current_quantity),
+          (sum, batch) => sum + amount(batch.current_quantity),
           0
-        ) + animals.length;
+        ) + activeAnimals.length;
 
       const livestockValue =
         activeBatches.reduce(
-          (sum, b) =>
+          (sum, batch) =>
             sum +
-            amount(b.current_quantity) *
-              amount(b.estimated_unit_value),
+            amount(batch.current_quantity) *
+              amount(batch.estimated_unit_value),
           0
         ) +
-        animals.reduce(
-          (sum, a) => sum + amount(a.estimated_value),
+        activeAnimals.reduce(
+          (sum, animal) => sum + amount(animal.estimated_value),
           0
         );
 
       const monthlySales = validSales
-        .filter((s) => s.sale_date >= monthStart && s.sale_date <= today)
-        .reduce((sum, s) => sum + amount(s.total_amount), 0);
+        .filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today)
+        .reduce((sum, sale) => sum + amount(sale.total_amount), 0);
 
-      const monthlyIncome = validIncome
+      const monthSalesIds = new Set(
+        validSales
+          .filter((sale) => sale.sale_date >= monthStart && sale.sale_date <= today)
+          .map((sale) => sale.id)
+      );
+      const monthlyCostOfGoodsSold = saleItems
+        .filter((item) => monthSalesIds.has(item.sale_id))
+        .reduce((sum, item) => sum + amount(item.cost_total), 0);
+
+      const monthlyOtherIncome = validIncome
         .filter(
-          (i) => i.received_on >= monthStart && i.received_on <= today
+          (item) => item.received_on >= monthStart && item.received_on <= today
         )
-        .reduce((sum, i) => sum + amount(i.amount), 0);
+        .reduce((sum, item) => sum + amount(item.amount), 0);
 
       const monthlyExpenses = validExpenses
         .filter(
-          (e) => e.spent_on >= monthStart && e.spent_on <= today
+          (expense) => expense.spent_on >= monthStart && expense.spent_on <= today
         )
-        .reduce((sum, e) => sum + amount(e.amount), 0);
+        .reduce((sum, expense) => sum + amount(expense.amount), 0);
 
       const todaySales = validSales
-        .filter((s) => s.sale_date === today)
-        .reduce((sum, s) => sum + amount(s.total_amount), 0);
+        .filter((sale) => sale.sale_date === today)
+        .reduce((sum, sale) => sum + amount(sale.total_amount), 0);
 
       const lowStock = inventory.filter(
         (item) =>
@@ -153,10 +192,10 @@ function CEOOffice() {
         livestockValue,
         todaySales,
         monthlySales,
-        monthlyIncome,
+        monthlyIncome: monthlyOtherIncome,
         monthlyExpenses,
         estimatedProfit:
-          monthlyIncome - monthlyExpenses,
+          monthlySales + monthlyOtherIncome - monthlyExpenses - monthlyCostOfGoodsSold,
         lowStock,
         recentSales: [...validSales]
           .sort((a, b) => b.sale_date.localeCompare(a.sale_date))
@@ -399,7 +438,7 @@ function CEOOffice() {
         {
           p_approval_id: id,
           p_spent_on: spentOn,
-          p_reference: reference.trim() || null,
+          ...(reference.trim() ? { p_reference: reference.trim() } : {}),
           p_category: category.trim(),
         }
       );
@@ -484,9 +523,13 @@ function CEOOffice() {
         </Panel>
       ) : query.isError ? (
         <Panel title="Unable to load executive data">
-          <p className="text-sm text-muted-foreground">
-            Check the Supabase connection, table permissions, and
-            database schema.
+          <p className="text-sm text-destructive">
+            {query.error instanceof Error
+              ? query.error.message
+              : "An unknown error occurred while loading executive data."}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Correct the reported data source or permission issue, then refresh.
           </p>
           <button
             type="button"
@@ -529,7 +572,7 @@ function CEOOffice() {
                         {item.name}
                       </span>
                       <StatusBadge tone="warning">
-                        Reorder needed
+                        Low stock
                       </StatusBadge>
                     </div>
                   ))}
@@ -985,13 +1028,13 @@ function CEOOffice() {
       <p className="mt-3 text-sm text-destructive">
         Could not load saved targets. Check your database permissions.
       </p>
-    ) : targetsQuery.data.length === 0 ? (
+    ) : (targetsQuery.data ?? []).length === 0 ? (
       <p className="mt-3 text-sm text-muted-foreground">
         No targets saved yet. Use the form above to add your first target.
       </p>
     ) : (
       <div className="mt-3 space-y-3">
-        {targetsQuery.data.map((target) => (
+        {(targetsQuery.data ?? []).map((target) => (
           <div key={target.id} className="rounded-lg border p-4">
             <div className="flex flex-wrap justify-between gap-2">
               <h5 className="font-medium">{target.title}</h5>
@@ -1070,7 +1113,7 @@ function CEOOffice() {
                       <div className="min-w-0">
                         <h4 className="font-semibold">{visitor.visitor_name}</h4>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {visitor.organization || "No organization"} · Arrived {new Date(visitor.arrived_at).toLocaleString()}
+                          {visitor.organization || "No organization"} · Arrived {formatFarmDateTime(visitor.arrived_at)}
                         </p>
                       </div>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${visitor.departed_at ? "bg-muted text-muted-foreground" : "bg-green-500/10 text-green-700 dark:text-green-400"}`}>
@@ -1081,7 +1124,7 @@ function CEOOffice() {
                     <p className="mt-1 text-sm"><strong>Meeting with:</strong> {visitor.person_to_visit || "Not specified"}</p>
                     {visitor.departed_at && (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Checked out: {new Date(visitor.departed_at).toLocaleString()}
+                        Checked out: {formatFarmDateTime(visitor.departed_at)}
                       </p>
                     )}
                     {visitor.notes && <p className="mt-2 text-sm text-muted-foreground"><strong>Notes:</strong> {visitor.notes}</p>}
