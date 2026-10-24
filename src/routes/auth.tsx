@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brand } from "@/components/app/Brand";
 import { useAuth } from "@/hooks/use-auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "Staff sign in for the TOBADDY AGRO LIVESTOCK management system." },
       { property: "og:title", content: "Sign in — TOBADDY AGRO LIVESTOCK" },
       { property: "og:description", content: "Staff sign in for the management system." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,
@@ -26,6 +29,22 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
+
+  async function requestReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = String(new FormData(event.currentTarget).get("recovery-email") ?? "").trim();
+    setResetBusy(true); setResetMessage(""); setResetError("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+      if (error) { setResetError("Unable to send a reset request right now. Please try again later."); return; }
+      setResetMessage("If an account exists for this email, you’ll receive a password reset link. Check your inbox and spam folder.");
+    } catch { setResetError("Unable to connect. Please try again."); }
+    finally { setResetBusy(false); }
+  }
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard", replace: true });
@@ -87,15 +106,7 @@ function AuthPage() {
                 <Field name="email" label="Email" type="email" />
                 <Field name="password" label="Password" type="password" />
                 <Button className="w-full" disabled={busy}>Sign in</Button>
-                <button type="button" className="w-full text-center text-sm text-primary hover:underline" disabled={busy} onClick={async (ev) => {
-                  const email = String(new FormData(ev.currentTarget.form!).get("email") ?? "").trim();
-                  if (!email) { toast.error("Enter your email above first, then click Forgot password."); return; }
-                  setBusy(true);
-                  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
-                  setBusy(false);
-                  if (error) toast.error(error.message);
-                  else toast.success("If an account exists for that email, a reset link has been sent.");
-                }}>Forgot password?</button>
+                <Button type="button" variant="link" className="w-full" onClick={() => { setResetMessage(""); setResetError(""); setForgotOpen(true); }}>Forgot password?</Button>
               </form>
             </TabsContent>
             <TabsContent value="signup">
@@ -112,6 +123,16 @@ function AuthPage() {
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
           </div>
           <Button variant="outline" className="w-full" onClick={google}>Continue with Google</Button>
+          <Dialog open={forgotOpen} onOpenChange={(open) => { if (!resetBusy) setForgotOpen(open); }}>
+            <DialogContent className="sm:max-w-sm"><DialogHeader><DialogTitle>Reset your password</DialogTitle><DialogDescription>Enter the email address for your staff account.</DialogDescription></DialogHeader>
+              <form onSubmit={requestReset} className="space-y-4">
+                <Label htmlFor="recovery-email">Email</Label><Input id="recovery-email" name="recovery-email" type="email" autoComplete="email" required disabled={resetBusy} />
+                {resetMessage && <p role="status" className="text-sm text-success">{resetMessage}</p>}
+                {resetError && <p role="alert" className="text-sm text-destructive">{resetError}</p>}
+                <Button className="w-full" disabled={resetBusy}>{resetBusy ? "Sending…" : "Send reset link"}</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
