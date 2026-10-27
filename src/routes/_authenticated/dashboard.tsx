@@ -29,6 +29,27 @@ const money = (value: number) => formatNaira(value);
 
 const number = (value: unknown) => Number(value ?? 0);
 
+const livestockSingularLabel = (name: string) => {
+  const normalized = name.trim().toLowerCase();
+  const labels: Record<string, string> = {
+    cattle: "cow",
+    cow: "cow",
+    cows: "cow",
+    goat: "goat",
+    goats: "goat",
+    sheep: "sheep",
+    poultry: "poultry",
+    chicken: "chicken",
+    chickens: "chicken",
+    swine: "pig",
+    pig: "pig",
+    pigs: "pig",
+    rabbits: "rabbit",
+    rabbit: "rabbit",
+  };
+  return labels[normalized] ?? normalized.replace(/s$/, "");
+};
+
 function Dashboard() {
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-live-data"],
@@ -404,11 +425,11 @@ function Dashboard() {
                       </div>
                       <div className="mt-3 space-y-1.5 border-t pt-3 text-sm">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">Female {item.name.toLowerCase()}</span>
+                          <span className="text-muted-foreground">Female {livestockSingularLabel(item.name)}</span>
                           <span className="font-semibold tabular-nums">{item.femaleCount.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">Male {item.name.toLowerCase()}</span>
+                          <span className="text-muted-foreground">Male {livestockSingularLabel(item.name)}</span>
                           <span className="font-semibold tabular-nums">{item.maleCount.toLocaleString()}</span>
                         </div>
                         {item.unknownSexCount > 0 && (
