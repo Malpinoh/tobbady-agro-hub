@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -140,10 +141,34 @@ function AuthPage() {
 }
 
 function Field({ name, label, type = "text", minLength }: { name: string; label: string; type?: string; minLength?: number }) {
+  const [visible, setVisible] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} required minLength={minLength} />
+      <div className="relative">
+        <Input
+          id={name}
+          name={name}
+          type={isPassword && visible ? "text" : type}
+          required
+          minLength={minLength}
+          className={isPassword ? "pr-10" : undefined}
+          autoComplete={isPassword ? (name === "password" ? "current-password" : undefined) : undefined}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            className="absolute inset-y-0 right-2 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => setVisible((current) => !current)}
+            aria-label={visible ? "Hide password" : "Show password"}
+            aria-pressed={visible}
+          >
+            {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
