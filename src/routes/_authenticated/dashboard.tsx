@@ -53,7 +53,7 @@ function Dashboard() {
           .select("id, name, unit_label"),
         supabase
           .from("animals")
-          .select("id, estimated_value, livestock_type_id, status")
+          .select("id, estimated_value, livestock_type_id, status, sex")
           .eq("approval_status", "approved"),
         supabase
           .from("sales")
@@ -121,6 +121,12 @@ function Dashboard() {
       );
 
       const animalCount = activeAnimals.length;
+      const femaleAnimalCount = activeAnimals.filter(
+        (animal) => String(animal.sex ?? "").trim().toLowerCase() === "female",
+      ).length;
+      const maleAnimalCount = activeAnimals.filter(
+        (animal) => String(animal.sex ?? "").trim().toLowerCase() === "male",
+      ).length;
       const totalLivestock = batchCount + animalCount;
 
       const batchValue = activeBatches.reduce(
@@ -212,6 +218,9 @@ function Dashboard() {
 
       return {
         totalLivestock,
+        totalIndividualAnimals: animalCount,
+        femaleAnimalCount,
+        maleAnimalCount,
         livestockValue: batchValue + animalValue,
         todaySales,
         todayExpenses,
@@ -243,6 +252,9 @@ function Dashboard() {
 
   const stats: Array<[string, string]> = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
+    ["Total Individual Animals", data?.totalIndividualAnimals.toLocaleString() ?? "—"],
+    ["Female Animals", data?.femaleAnimalCount.toLocaleString() ?? "—"],
+    ["Male Animals", data?.maleAnimalCount.toLocaleString() ?? "—"],
     ["Estimated Livestock Value", data ? money(data.livestockValue) : "—"],
     ["Today's Sales Revenue", data ? money(data.todaySales) : "—"],
     ["Today's Operating Expenses", data ? money(data.todayExpenses) : "—"],
