@@ -29,6 +29,27 @@ const money = (value: number) => formatNaira(value);
 
 const number = (value: unknown) => Number(value ?? 0);
 
+const livestockSingularLabel = (name: string) => {
+  const normalized = name.trim().toLowerCase();
+  const labels: Record<string, string> = {
+    cattle: "cow",
+    cow: "cow",
+    cows: "cow",
+    goat: "goat",
+    goats: "goat",
+    sheep: "sheep",
+    poultry: "poultry",
+    chicken: "chicken",
+    chickens: "chicken",
+    swine: "pig",
+    pig: "pig",
+    pigs: "pig",
+    rabbits: "rabbit",
+    rabbit: "rabbit",
+  };
+  return labels[normalized] ?? normalized.replace(/s$/, "");
+};
+
 function Dashboard() {
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-live-data"],
@@ -53,7 +74,7 @@ function Dashboard() {
           .select("id, name, unit_label"),
         supabase
           .from("animals")
-          .select("id, estimated_value, livestock_type_id, status")
+          .select("id, estimated_value, livestock_type_id, status, sex")
           .eq("approval_status", "approved"),
         supabase
           .from("sales")
@@ -121,6 +142,12 @@ function Dashboard() {
       );
 
       const animalCount = activeAnimals.length;
+      const femaleAnimalCount = activeAnimals.filter(
+        (animal) => String(animal.sex ?? "").trim().toLowerCase() === "female",
+      ).length;
+      const maleAnimalCount = activeAnimals.filter(
+        (animal) => String(animal.sex ?? "").trim().toLowerCase() === "male",
+      ).length;
       const totalLivestock = batchCount + animalCount;
 
       const batchValue = activeBatches.reduce(
@@ -146,6 +173,16 @@ function Dashboard() {
         const individualQuantity = activeAnimals.filter(
           (animal) => animal.livestock_type_id === type.id,
         ).length;
+        const animalsOfType = activeAnimals.filter(
+          (animal) => animal.livestock_type_id === type.id,
+        );
+        const femaleCount = animalsOfType.filter(
+          (animal) => String(animal.sex ?? "").trim().toLowerCase() === "female",
+        ).length;
+        const maleCount = animalsOfType.filter(
+          (animal) => String(animal.sex ?? "").trim().toLowerCase() === "male",
+        ).length;
+        const unknownSexCount = animalsOfType.length - femaleCount - maleCount;
         const quantity = batchQuantity + individualQuantity;
 
         return {
@@ -153,6 +190,11 @@ function Dashboard() {
           name: type.name,
           unit: type.unit_label || "head",
           quantity,
+          batchQuantity,
+          individualQuantity,
+          femaleCount,
+          maleCount,
+          unknownSexCount,
         };
       });
 
@@ -212,6 +254,9 @@ function Dashboard() {
 
       return {
         totalLivestock,
+        totalIndividualAnimals: animalCount,
+        femaleAnimalCount,
+        maleAnimalCount,
         livestockValue: batchValue + animalValue,
         todaySales,
         todayExpenses,
@@ -243,6 +288,9 @@ function Dashboard() {
 
   const stats: Array<[string, string]> = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
+    ["Total Individual Animals", data?.totalIndividualAnimals.toLocaleString() ?? "—"],
+    ["Female Animals", data?.femaleAnimalCount.toLocaleString() ?? "—"],
+    ["Male Animals", data?.maleAnimalCount.toLocaleString() ?? "—"],
     ["Estimated Livestock Value", data ? money(data.livestockValue) : "—"],
     ["Today's Sales Revenue", data ? money(data.todaySales) : "—"],
     ["Today's Operating Expenses", data ? money(data.todayExpenses) : "—"],
@@ -370,10 +418,31 @@ function Dashboard() {
                         {item.name}
                       </div>
                       <div className="font-display text-xl font-bold tabular-nums">
-                        {item.quantity.toLocaleString()}{" "}
+                        Total {item.name}: {item.quantity.toLocaleString()}{" "}
                         <span className="text-xs font-normal text-muted-foreground">
                           {item.unit}
                         </span>
+                      </div>
+                      <div className="mt-3 space-y-1.5 border-t pt-3 text-sm">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">Female {livestockSingularLabel(item.name)}</span>
+                          <span className="font-semibold tabular-nums">{item.femaleCount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">Male {livestockSingularLabel(item.name)}</span>
+                          <span className="font-semibold tabular-nums">{item.maleCount.toLocaleString()}</span>
+                        </div>
+                        {item.unknownSexCount > 0 && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground">Sex not recorded</span>
+                            <span className="tabular-nums">{item.unknownSexCount.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {item.batchQuantity > 0 && (
+                          <p className="pt-1 text-xs text-muted-foreground">
+                            {item.batchQuantity.toLocaleString()} in batches; sex breakdown counts individual records only.
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
