@@ -248,6 +248,36 @@ function InventoryContent() {
     0,
   );
 
+  // Estimate the value of inventory consumed, grouped by the item's inventory category.
+  // This is stock usage value, not a duplicate of paid expense records.
+  const inventoryUsageByCategory = categories.map((category) => {
+    const categoryItems = items.filter(
+      (item) => (item.category ?? "Other").trim().toLowerCase() === category.toLowerCase(),
+    );
+    const categoryItemIds = new Set(categoryItems.map((item) => item.id));
+    const usedTransactions = transactions.filter(
+      (transaction) =>
+        transaction.transaction_type === "used" && categoryItemIds.has(transaction.item_id),
+    );
+    const quantityByUnit = new Map<string, number>();
+    const value = usedTransactions.reduce((sum, transaction) => {
+      const item = itemById.get(transaction.item_id);
+      if (!item) return sum;
+      const unit = item.unit || "units";
+      quantityByUnit.set(unit, (quantityByUnit.get(unit) ?? 0) + Number(transaction.quantity || 0));
+      const unitCost = transaction.unit_cost ?? item.unit_cost ?? 0;
+      return sum + Number(transaction.quantity || 0) * Number(unitCost || 0);
+    }, 0);
+    return {
+      category,
+      value,
+      quantitySummary: Array.from(quantityByUnit.entries())
+        .map(([unit, quantity]) => `${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`)
+        .join(", "),
+    };
+  });
+  const totalInventoryUsageValue = inventoryUsageByCategory.reduce((sum, entry) => sum + entry.value, 0);
+
   const filteredItems = useMemo(() => {
     const term = search.toLowerCase().trim();
 
@@ -624,6 +654,31 @@ function InventoryContent() {
             Paid feeding expense totals could not be loaded for this account. The feed-used estimate is calculated from inventory movements.
           </p>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Inventory usage value by type</h2>
+          <p className="text-sm text-muted-foreground">
+            Estimated value of stock recorded as used in each inventory category, calculated from the movement's saved unit cost or the item's current unit cost. These figures are separate from paid expense totals.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {inventoryUsageByCategory.map((entry) => (
+            <div key={entry.category} className="rounded-xl border bg-card p-5">
+              <p className="text-sm text-muted-foreground">{entry.category}</p>
+              <p className="mt-3 text-2xl font-semibold">{formatNaira(entry.value)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {entry.quantitySummary || "No stock usage recorded"}
+              </p>
+            </div>
+          ))}
+          <div className="rounded-xl border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Total value of inventory used</p>
+            <p className="mt-3 text-2xl font-semibold">{formatNaira(totalInventoryUsageValue)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Across all inventory categories</p>
+          </div>
+        </div>
       </section>
 
       {lowStockItems.length > 0 && (
