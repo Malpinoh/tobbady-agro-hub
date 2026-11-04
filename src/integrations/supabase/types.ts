@@ -1616,6 +1616,8 @@ export type Database = {
       }
       record_inventory_movement: {
         Args: {
+          p_animal_id?: string
+          p_batch_id?: string
           p_item_id: string
           p_notes?: string
           p_quantity: number
