@@ -489,8 +489,12 @@ function InventoryContent() {
           movementType === "count"
             ? `Physical count: ${enteredCount} ${item.unit}. ${movementNotes.trim()}`.trim()
             : movementNotes.trim() || "",
-        p_animal_id: movementType === "used" && feedUsageTarget === "animal" ? feedAnimalId : null,
-        p_batch_id: movementType === "used" && feedUsageTarget === "batch" ? feedBatchId : null,
+        ...(movementType === "used" && feedUsageTarget === "animal" && feedAnimalId
+          ? { p_animal_id: feedAnimalId }
+          : {}),
+        ...(movementType === "used" && feedUsageTarget === "batch" && feedBatchId
+          ? { p_batch_id: feedBatchId }
+          : {}),
       });
 
       if (error) throw error;
@@ -503,7 +507,13 @@ function InventoryContent() {
         queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
       ]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Could not record stock movement.");
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message || "Could not record stock movement.")
+          : error instanceof Error
+            ? error.message
+            : "Could not record stock movement.";
+      alert(message);
       await queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
     } finally {
       setSaving(false);
