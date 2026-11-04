@@ -809,7 +809,7 @@ function InventoryContent() {
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={canManage ? 7 : 6} className="p-8 text-center">
+                  <td colSpan={canManage ? 8 : 7} className="p-8 text-center">
                     <Boxes className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                     <p className="font-medium">No inventory items found</p>
                     <p className="mt-1 text-muted-foreground">
@@ -859,6 +859,17 @@ function InventoryContent() {
                             >
                               Move stock
                             </Button>
+                            {canDeleteInventory && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={saving}
+                                onClick={() => deleteItem(item)}
+                              >
+                                <Trash2 className="mr-1 h-4 w-4" />
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         </td>
                       )}
