@@ -61,6 +61,25 @@ function SecretaryOffice() {
 
   const canManage = roles.some((role) => ["ceo", "secretary", "administrator"].includes(role));
 
+  const submissionsQuery = useQuery({
+    queryKey: ["secretary-submission-status", user?.id],
+    enabled: !!user?.id,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const [changes, deletions] = await Promise.all([
+        supabase.from("record_change_requests").select("id, record_label, record_type, request_type, status, reason, rejection_reason, requested_at, mortality_quantity").eq("requested_by", user.id).order("requested_at", { ascending: false }),
+        supabase.from("secretary_delete_requests").select("id, record_label, table_name, status, reason, rejection_reason, requested_at").eq("requested_by", user.id).order("requested_at", { ascending: false }),
+      ]);
+      if (changes.error) throw changes.error;
+      if (deletions.error) throw deletions.error;
+      return [
+        ...(changes.data ?? []).map((row) => ({ id: row.id, label: row.record_label || "Livestock record", type: row.mortality_quantity != null ? "Mortality report" : row.request_type === "delete" ? "Deletion request" : "Edit request", status: row.status, reason: row.reason, rejectionReason: row.rejection_reason, requestedAt: row.requested_at })),
+        ...(deletions.data ?? []).map((row) => ({ id: row.id, label: row.record_label || "Record deletion", type: "Deletion · " + (row.table_name || "record").replaceAll("_", " "), status: row.status, reason: row.reason, rejectionReason: row.rejection_reason, requestedAt: row.requested_at })),
+      ].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+    },
+  });
+  const submissions = submissionsQuery.data ?? [];
   const meetingsQuery = useQuery({
     queryKey: ["secretary-office", "meetings"],
     queryFn: async () => {
@@ -211,6 +230,33 @@ function SecretaryOffice() {
           actions={<Button variant="outline" onClick={() => void Promise.all(queries.map((query) => query.refetch()))} disabled={loading}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>}
         />
 
+        <Panel title="My submitted changes">
+          <p className="mb-3 text-sm text-muted-foreground">Track decisions on livestock edits, mortality reports and deletion requests you submitted. This list refreshes automatically.</p>
+          {submissionsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading submission statuses…</p>
+          ) : submissionsQuery.isError ? (
+            <p className="text-sm text-destructive">Could not load your submission statuses: {friendlyError(submissionsQuery.error)}</p>
+          ) : submissions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">You have no submitted changes to track yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {submissions.map((submission) => {
+                const status = String(submission.status ?? "pending").toLowerCase();
+                const tone = status === "approved" ? "success" : status === "rejected" ? "danger" : "warning";
+                return (
+                  <article key={submission.id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div><p className="font-medium">{submission.label}</p><p className="text-xs text-muted-foreground">{submission.type} · {submission.requestedAt ? formatFarmDateTime(submission.requestedAt) : "Date unavailable"}</p></div>
+                      <StatusBadge tone={tone}>{status}</StatusBadge>
+                    </div>
+                    {submission.reason && <p className="mt-2 text-sm"><strong>Reason:</strong> {submission.reason}</p>}
+                    {status === "rejected" && submission.rejectionReason && <p className="mt-1 text-sm text-destructive"><strong>Rejection reason:</strong> {submission.rejectionReason}</p>}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </Panel>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <Summary icon={CalendarDays} label="Upcoming meetings" value={String(upcoming)} />
           <Summary icon={Mail} label="Open correspondence" value={String(openLetters)} />
