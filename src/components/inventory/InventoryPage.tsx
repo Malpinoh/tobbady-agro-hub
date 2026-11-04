@@ -14,6 +14,7 @@ import {
   Search,
   TrendingDown,
   TrendingUp,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -100,9 +101,11 @@ const categories = [
 ];
 
 function InventoryContent() {
-  const { can } = useAuth();
+  const { can, hasRole } = useAuth();
   const queryClient = useQueryClient();
   const canManage = can("inventory.manage");
+  const canDeleteInventory = hasRole("ceo") || hasRole("administrator") || hasRole("secretary");
+  const isSecretary = hasRole("secretary") && !hasRole("ceo") && !hasRole("administrator");
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -397,6 +400,42 @@ function InventoryContent() {
       ]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not save inventory item.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteItem(item: InventoryItem) {
+    if (!canDeleteInventory) {
+      alert("Only the CEO, Administrator or Secretary can delete or request deletion of an inventory item.");
+      return;
+    }
+
+    const warning = isSecretary
+      ? `Submit a deletion request for "${item.name}"? The item will remain until the CEO or Administrator approves the request.`
+      : `Delete "${item.name}"? This also deletes its linked stock movement history. This action cannot be undone.`;
+    if (!window.confirm(warning)) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("inventory_items")
+        .delete()
+        .eq("id", item.id);
+      if (error) throw error;
+
+      alert(isSecretary
+        ? "Deletion request submitted. The inventory item will remain until the CEO or Administrator reviews it."
+        : "Inventory item and its linked stock movement history deleted.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory-items"] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-live-data"] }),
+        queryClient.invalidateQueries({ queryKey: ["record-approvals-pending"] }),
+        queryClient.invalidateQueries({ queryKey: ["secretary-delete-requests"] }),
+      ]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not delete inventory item.");
     } finally {
       setSaving(false);
     }
@@ -752,7 +791,7 @@ function InventoryContent() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left">
               <tr>
-                <th className="p-3 font-medium">Item</th>
+                <th className="p-3 font-medium">Item</th>\n                <th className="p-3 font-medium">Date added</th>
                 <th className="p-3 font-medium">Category</th>
                 <th className="p-3 font-medium">Quantity</th>
                 <th className="p-3 font-medium">When to buy more</th>
@@ -764,7 +803,7 @@ function InventoryContent() {
             <tbody>
               {itemsQuery.isLoading ? (
                 <tr>
-                  <td colSpan={canManage ? 7 : 6} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={canManage ? 8 : 7} className="p-8 text-center text-muted-foreground">
                     Loading inventory...
                   </td>
                 </tr>
@@ -792,7 +831,7 @@ function InventoryContent() {
                           <p className="text-xs text-muted-foreground">{item.sku}</p>
                         )}
                       </td>
-                      <td className="p-3">{item.category ?? "Other"}</td>
+                      <td className="whitespace-nowrap p-3">{new Date(item.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</td>\n                      <td className="p-3">{item.category ?? "Other"}</td>
                       <td className="p-3">
                         <span className={low ? "font-semibold text-amber-600" : ""}>
                           {item.quantity_on_hand} {item.unit}
