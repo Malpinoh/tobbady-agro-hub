@@ -55,6 +55,38 @@ function Dashboard() {
     queryKey: ["dashboard-live-data"],
     refetchInterval: 30_000,
     queryFn: async () => {
+      // Fetch every expense row in pages so the all-time total is not limited
+      // by Supabase/PostgREST's default maximum rows per request.
+      const fetchAllExpenses = async () => {
+        const pageSize = 1000;
+        let offset = 0;
+        const rows: Array<{
+          id: string;
+          spent_on: string;
+          amount: number | string | null;
+          category: string | null;
+          status: string | null;
+        }> = [];
+
+        while (true) {
+          const { data, error } = await supabase
+            .from("expenses")
+            .select("id, spent_on, amount, category, status")
+            .range(offset, offset + pageSize - 1);
+
+          if (error) {
+            throw new Error(`Dashboard could not load expenses: ${error.message}${error.code ? ` (code ${error.code})` : ""}`);
+          }
+
+          const page = data ?? [];
+          rows.push(...page);
+          if (page.length < pageSize) break;
+          offset += pageSize;
+        }
+
+        return rows;
+      };
+
       const [
         batchesResult,
         typesResult,
@@ -79,9 +111,7 @@ function Dashboard() {
         supabase
           .from("sales")
           .select("id, sale_date, total_amount, status"),
-        supabase
-          .from("expenses")
-          .select("id, spent_on, amount, category, status"),
+        fetchAllExpenses(),
         supabase
           .from("income")
           .select("id, sale_id, category, received_on, amount, status"),
@@ -97,7 +127,6 @@ function Dashboard() {
         ["livestock types", typesResult],
         ["individual animals", animalsResult],
         ["sales", salesResult],
-        ["expenses", expensesResult],
         ["income ledger", incomeResult],
         ["inventory", inventoryResult],
         ["sale item costs", saleItemsResult],
@@ -118,7 +147,7 @@ function Dashboard() {
         (animal) => String(animal.status ?? "").toLowerCase() === "active",
       );
       const sales = salesResult.data ?? [];
-      const expenses = expensesResult.data ?? [];
+      const expenses = expensesResult;
       const income = incomeResult.data ?? [];
       const inventory = inventoryResult.data ?? [];
 
@@ -246,6 +275,23 @@ function Dashboard() {
         .filter(isLivestockPurchase)
         .reduce((sum, expense) => sum + number(expense.amount), 0);
 
+      // All-time expenses include every approved expense category, including
+      // livestock purchases. This is a dashboard spending total, not a change
+      // to the Profit & Loss treatment of livestock purchases.
+      const allTimeApprovedExpenses = expenses.filter(
+        (expense) => String(expense.status ?? "").toLowerCase() === "approved",
+      );
+      const allTimeExpenses = allTimeApprovedExpenses.reduce(
+        (sum, expense) => sum + number(expense.amount),
+        0,
+      );
+      const allTimeOperatingExpenses = allTimeApprovedExpenses
+        .filter((expense) => !isLivestockPurchase(expense))
+        .reduce((sum, expense) => sum + number(expense.amount), 0);
+      const allTimeLivestockPurchases = allTimeApprovedExpenses
+        .filter(isLivestockPurchase)
+        .reduce((sum, expense) => sum + number(expense.amount), 0);
+
       const lowStock = inventory.filter(
         (item) =>
           item.reorder_level != null &&
@@ -261,6 +307,9 @@ function Dashboard() {
         todaySales,
         todayExpenses,
         todayLivestockPurchases,
+        allTimeExpenses,
+        allTimeOperatingExpenses,
+        allTimeLivestockPurchases,
         monthlyRevenue: monthIncome,
         monthlyExpenses: monthExpenses,
         monthlyLivestockPurchases: monthLivestockPurchases,
@@ -286,12 +335,47 @@ function Dashboard() {
     quantity: item.quantity,
   }));
 
+  const recommendations = data
+    ? [
+        {
+          title: "Financial performance",
+          detail:
+            data.monthlyRevenue === 0 && data.monthlyExpenses === 0
+              ? "No recognised revenue or operating expenses are recorded for this month yet. Keep sales, income and expense records up to date."
+              : data.estimatedProfit < 0
+                ? "The current month's estimated result is negative. Review operating costs, livestock sale margins and purchasing decisions before taking on new spending."
+                : data.estimatedProfit > 0
+                  ? "The current month is showing a positive estimated result. Keep monitoring costs and maintain accurate sales and expense records."
+                  : "The current month's estimated result is break-even. Monitor costs and look for ways to improve sales margins.",
+          tone:
+            data.estimatedProfit < 0 ? "warning" : "positive",
+        },
+        {
+          title: "Expense control",
+          detail:
+            data.allTimeExpenses > 0
+              ? `Approved spending since the farm started totals ${money(data.allTimeExpenses)}: ${money(data.allTimeOperatingExpenses)} in operating expenses and ${money(data.allTimeLivestockPurchases)} in livestock purchases. Review the category breakdown regularly to spot unusual increases.`
+              : "No approved expenses have been recorded yet. Record and approve each farm expense so management can track total spending accurately.",
+          tone: "info",
+        },
+        {
+          title: "Inventory attention",
+          detail:
+            data.lowStock.length > 0
+              ? `${data.lowStock.length} inventory item(s) are at or below their reorder level. Review the low-stock list and plan replenishment to avoid interruptions.`
+              : "No inventory items are currently flagged at or below their reorder level. Continue checking stock levels as new transactions are recorded.",
+          tone: data.lowStock.length > 0 ? "warning" : "positive",
+        },
+      ]
+    : [];
+
   const stats: Array<[string, string]> = [
     ["Total Livestock", data?.totalLivestock.toLocaleString() ?? "—"],
     ["Total Individual Animals", data?.totalIndividualAnimals.toLocaleString() ?? "—"],
     ["Female Animals", data?.femaleAnimalCount.toLocaleString() ?? "—"],
     ["Male Animals", data?.maleAnimalCount.toLocaleString() ?? "—"],
     ["Estimated Livestock Value", data ? money(data.livestockValue) : "—"],
+    ["Total Approved Expenses Since Farm Started", data ? money(data.allTimeExpenses) : "—"],
     ["Today's Sales Revenue", data ? money(data.todaySales) : "—"],
     ["Today's Operating Expenses", data ? money(data.todayExpenses) : "—"],
     ["Today's Livestock Purchases", data ? money(data.todayLivestockPurchases) : "—"],
@@ -348,6 +432,28 @@ function Dashboard() {
               </div>
             ))}
           </div>
+
+          <Panel title="Management recommendations" className="mt-6">
+            <div className="grid gap-3 md:grid-cols-3">
+              {recommendations.map((item) => (
+                <div
+                  key={item.title}
+                  className={`rounded-lg border p-4 ${
+                    item.tone === "warning"
+                      ? "border-amber-300 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/20"
+                      : item.tone === "positive"
+                        ? "border-green-300 bg-green-50/70 dark:border-green-900 dark:bg-green-950/20"
+                        : "bg-muted/30"
+                  }`}
+                >
+                  <div className="text-sm font-semibold">{item.title}</div>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {item.detail}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Panel>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-2">
             <Panel title="Livestock distribution">
