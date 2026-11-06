@@ -170,6 +170,18 @@ export function ReportsPage() {
     },
   });
 
+  // Resolve audit-log user IDs to profile emails for readable activity history.
+  const profilesQuery = useQuery({
+    queryKey: ["reports-activity-user-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const activityQuery = useQuery({
     queryKey: ["reports-activity"],
     queryFn: async () => {
@@ -194,6 +206,7 @@ export function ReportsPage() {
     batchesQuery,
     typesQuery,
     activityQuery,
+    profilesQuery,
   ].some((query) => query.isLoading);
 
   const errors = [
@@ -205,6 +218,7 @@ export function ReportsPage() {
     batchesQuery,
     typesQuery,
     activityQuery,
+    profilesQuery,
   ].some((query) => query.isError);
 
   const inPeriod = (date: string) =>
@@ -272,6 +286,9 @@ export function ReportsPage() {
   const batches = batchesQuery.data ?? [];
   const livestockTypes = typesQuery.data ?? [];
   const activity = activityQuery.data ?? [];
+  const activityUserEmails = new Map(
+    (profilesQuery.data ?? []).map((profile) => [profile.id, profile.email]),
+  );
 
   const typeName = (id: string) =>
     livestockTypes.find((item) => item.id === id)?.name ??
@@ -633,7 +650,7 @@ export function ReportsPage() {
                         <td className="p-4">{item.action}</td>
                         <td className="p-4">{formatActivityDescription(item)}</td>
                         <td className="p-4">{item.table_name || "—"}</td>
-                        <td className="p-4">{item.user_id || "—"}</td>
+                        <td className="p-4">{(item.user_id && activityUserEmails.get(item.user_id)) || "Email unavailable"}</td>
                       </tr>
                     ))}
                     {activity.length === 0 && (
